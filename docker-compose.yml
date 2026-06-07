@@ -1,0 +1,66 @@
+name: sokudoku
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: sokudoku
+      POSTGRES_PASSWORD: sokudoku
+      POSTGRES_DB: sokudoku
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    # DBはホストに公開しない: backend はコンテナ内ネットワークで db:5432 に接続するため不要。
+    # 公開するとホスト側のポート競合(別プロジェクトのPostgres等)で起動失敗するため塞いだ。
+    # ホストのGUIツールから直接覗きたいときだけ、下を有効化(空きポートを選ぶ):
+    #   ports:
+    #     - "5433:5432"
+    expose:
+      - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sokudoku"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  voicevox:
+    image: voicevox/voicevox_engine:cpu-latest
+    # OOM等で落ちても自動復旧させる(以前 ExitCode137/OOMKilled で停止した)
+    restart: unless-stopped
+    ports:
+      - "50021:50021"
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg2://sokudoku:sokudoku@db:5432/sokudoku
+      LLM_PROVIDER: ${LLM_PROVIDER:-ollama}
+      OLLAMA_URL: http://host.docker.internal:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-phi4}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: gemini-flash-latest
+      VOICEVOX_URL: http://voicevox:50021
+    # ホストのOllamaに到達できるようにする(全プラットフォームで名前解決)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      voicevox:
+        condition: service_started
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+
+volumes:
+  db-data:
