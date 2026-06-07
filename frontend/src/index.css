@@ -502,6 +502,22 @@ input {
   line-height: 2;
   color: var(--paper-ink);
   margin-top: 8px;
+  /* 長い数式やURLでもクリーム紙の外へはみ出させない(折り返す)。 */
+  overflow-wrap: anywhere;
+}
+
+/* 数式(KaTeX)のレイアウト */
+.reader-text .katex-display {
+  /* 別行立て数式は自前の行に。超幅広の式は紙内で横スクロール。 */
+  margin: 0.7em 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+/* $$...$$ を含む文はブロックにして改行を保つ。 */
+.reader-text .seg-display,
+.reader-text .mk.seg-display {
+  display: block;
 }
 
 /* マーカー(半透明蛍光ペン) */

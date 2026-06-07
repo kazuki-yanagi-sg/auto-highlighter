@@ -49,17 +49,46 @@ class ScrapeError(Exception):
     """スクレイピングに失敗したことを表す明示的な例外。"""
 
 
+def _replace_math_with_tex(soup: BeautifulSoup) -> None:
+    """<math> を LaTeX 区切り文字に置換する(arXiv HTML / LaTeXML 対応)。
+
+    MathML をそのまま get_text すると「見た目(Sn)+TeX注釈(S_{n})」が連結され、
+    数式が壊れる。alttext(無ければ x-tex 注釈)の TeX を取り出し、
+    display=block なら $$...$$、それ以外は $...$ で囲んで差し替える。
+    """
+    for math in soup.find_all("math"):
+        tex = (math.get("alttext") or "").strip()
+        if not tex:
+            ann = math.find("annotation", attrs={"encoding": "application/x-tex"})
+            tex = ann.get_text().strip() if ann else ""
+        if not tex:
+            math.decompose()  # TeXが取れない場合は二重テキストを残さず捨てる
+            continue
+        wrapped = f"$${tex}$$" if math.get("display") == "block" else f"${tex}$"
+        math.replace_with(wrapped)
+
+
+def _is_block_element(tag) -> bool:
+    """本文ブロックとして拾う要素か。別行立て数式(LaTeXMLの数式テーブル)も含める。"""
+    if tag.name in ("h1", "h2", "h3", "p", "li"):
+        return True
+    return tag.name == "table" and "ltx_equation" in (tag.get("class") or [])
+
+
 def extract_content(html: str) -> ScrapedContent:
     soup = BeautifulSoup(html, "html.parser")
 
     for tag in soup(_NOISE_TAGS):
         tag.decompose()
 
+    # 数式はテキスト抽出前に LaTeX 区切りへ変換しておく。
+    _replace_math_with_tex(soup)
+
     title = soup.title.get_text(strip=True) if soup.title else ""
 
     main = soup.find("article") or soup.find("main") or soup.body or soup
     blocks: list[Block] = []
-    for el in main.find_all(["h1", "h2", "h3", "p", "li"]):
+    for el in main.find_all(_is_block_element):
         text = el.get_text(strip=True)
         if not text:
             continue
@@ -73,6 +102,15 @@ def extract_content(html: str) -> ScrapedContent:
             blocks = [Block(kind="text", text=text)]
 
     return ScrapedContent(title=title, text=text, blocks=blocks)
+
+
+def _is_textual(content_type: str) -> bool:
+    """取り込み可能なテキスト系コンテンツか判定する(content_type は小文字前提)。"""
+    return (
+        content_type.startswith("text/")
+        or "html" in content_type
+        or "xml" in content_type
+    )
 
 
 class Scraper(ABC):
@@ -100,4 +138,13 @@ class HttpScraper(Scraper):
             raise ScrapeError(
                 f"取得に失敗しました({type(exc).__name__}): {url}"
             ) from exc
+
+        # PDF/画像 等のバイナリを text として処理すると本文が壊れ(NUL混入で保存失敗)、
+        # 原因の分からない500になる。HTML/テキスト系以外はここで明示的に弾く。
+        content_type = response.headers.get("content-type", "").lower()
+        if content_type and not _is_textual(content_type):
+            raise ScrapeError(
+                f"このページはHTMLではないため取り込めません"
+                f"(content-type: {content_type}): {url}"
+            )
         return extract_content(response.text)

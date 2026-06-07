@@ -29,3 +29,14 @@ test("文をクリックすると onSelectSegment が呼ばれる", async () => 
   await userEvent.click(screen.getByText("重要な主張。"));
   expect(onSelect).toHaveBeenCalledWith(1);
 });
+
+test("別行立て数式($$...$$)の文はブロック表示クラスを付ける", () => {
+  const eq: Segment[] = [
+    { id: 9, order: 0, text: "$$\\lim_{n\\to\\infty}x_{n}=x$$", marker: null, page: 0 },
+  ];
+  const { container } = render(
+    <HighlightedText segments={eq} onSelectSegment={() => {}} />,
+  );
+  // KaTeX の別行立て(katex-display)を含む文は seg-display で改行を保つ。
+  expect(container.querySelector(".seg-display")).not.toBeNull();
+});
