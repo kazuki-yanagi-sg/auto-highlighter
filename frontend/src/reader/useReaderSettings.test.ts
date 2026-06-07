@@ -13,14 +13,14 @@ test("更新すると反映され localStorage に保存される", () => {
   act(() => result.current[1]({ sheet: "dark", sizePx: 24 }));
   expect(result.current[0].sheet).toBe("dark");
   expect(result.current[0].sizePx).toBe(24);
-  expect(JSON.parse(localStorage.getItem("sokudoku.reader.settings")!).sheet).toBe(
+  expect(JSON.parse(localStorage.getItem("marker.reader.settings")!).sheet).toBe(
     "dark",
   );
 });
 
 test("保存済み設定を復元する", () => {
   localStorage.setItem(
-    "sokudoku.reader.settings",
+    "marker.reader.settings",
     JSON.stringify({ accent: "#e2714e" }),
   );
   const { result } = renderHook(() => useReaderSettings());

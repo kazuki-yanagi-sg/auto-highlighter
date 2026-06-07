@@ -1,24 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import {
-  deleteDocument as defaultDeleteDocument,
-  listCategories as defaultListCategories,
-  listDocuments as defaultListDocuments,
-} from "../api/client";
-import {
-  MARKER_COLORS,
-  type DocumentSummary,
-  type Page,
-} from "../types";
+import { deleteDocument as defaultDeleteDocument, listCategories as defaultListCategories, listDocuments as defaultListDocuments } from "../api/client";
+import { MARKER_COLORS, type DocumentSummary, type Page } from "../types";
 
 const PAGE_SIZE = 9;
 
 interface LibraryApi {
-  listDocuments: (
-    page: number,
-    size: number,
-    q: string,
-    category: string,
-  ) => Promise<Page<DocumentSummary>>;
+  listDocuments: (page: number, size: number, q: string, category: string) => Promise<Page<DocumentSummary>>;
   listCategories: () => Promise<string[]>;
   deleteDocument: (id: number) => Promise<void>;
 }
@@ -52,13 +39,7 @@ function formatDate(iso: string | null): string {
   return `${d.getMonth() + 1}月${d.getDate()}日`;
 }
 
-export function LibraryPage({
-  onOpen,
-  onSubmitUrl,
-  loading,
-  error,
-  api = defaultApi,
-}: Props) {
+export function LibraryPage({ onOpen, onSubmitUrl, loading, error, api = defaultApi }: Props) {
   const [result, setResult] = useState<Page<DocumentSummary> | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
   const [urlDraft, setUrlDraft] = useState("");
@@ -79,7 +60,10 @@ export function LibraryPage({
   }, [load]);
 
   useEffect(() => {
-    api.listCategories().then(setCategories).catch(() => setCategories([]));
+    api
+      .listCategories()
+      .then(setCategories)
+      .catch(() => setCategories([]));
   }, [api]);
 
   function submitUrl(e: React.FormEvent) {
@@ -112,23 +96,18 @@ export function LibraryPage({
   return (
     <main className="page scroll">
       <header className="brand">
-        <span className="brand-logo">速読</span>
-        <span className="brand-sub">Sokudoku</span>
+        <span className="brand-logo">マーカー</span>
+        <span className="brand-sub">Marker</span>
       </header>
       <p className="lead">
         URLを貼ると本文を取り込み、<b>4色のマーカー</b>
-        を引きながら速く読むためのリーダー。要約はしません — あなた自身が読むための道具です。
+        を引きながら読むためのリーダー。
       </p>
 
       <form className="urlbar" onSubmit={submitUrl}>
         <div className="urlbar-field">
           <span aria-hidden>🔗</span>
-          <input
-            type="url"
-            placeholder="記事のURLを貼り付け… 例) https://en.wikipedia.org/..."
-            value={urlDraft}
-            onChange={(e) => setUrlDraft(e.target.value)}
-          />
+          <input type="url" placeholder="記事のURLを貼り付け… 例) https://en.wikipedia.org/..." value={urlDraft} onChange={(e) => setUrlDraft(e.target.value)} />
         </div>
         <button className="btn-accent" type="submit" disabled={loading}>
           {loading ? "解析中…" : "解析する"}
@@ -143,27 +122,16 @@ export function LibraryPage({
         </div>
         <form className="search" onSubmit={search}>
           <span aria-hidden>🔍</span>
-          <input
-            placeholder="タイトル・URLで検索"
-            value={searchDraft}
-            onChange={(e) => setSearchDraft(e.target.value)}
-          />
+          <input placeholder="タイトル・URLで検索" value={searchDraft} onChange={(e) => setSearchDraft(e.target.value)} />
         </form>
       </div>
 
       <div className="chips">
-        <button
-          className={`chip ${category === "" ? "active" : ""}`}
-          onClick={() => pickCategory("")}
-        >
+        <button className={`chip ${category === "" ? "active" : ""}`} onClick={() => pickCategory("")}>
           すべて
         </button>
         {categories.map((c) => (
-          <button
-            key={c}
-            className={`chip ${category === c ? "active" : ""}`}
-            onClick={() => pickCategory(c)}
-          >
+          <button key={c} className={`chip ${category === c ? "active" : ""}`} onClick={() => pickCategory(c)}>
             {c}
           </button>
         ))}
@@ -171,27 +139,13 @@ export function LibraryPage({
 
       <div className="card-grid">
         {result?.items.map((doc) => (
-          <div
-            key={doc.id}
-            className="card"
-            role="button"
-            tabIndex={0}
-            onClick={() => onOpen(doc.id)}
-          >
+          <div key={doc.id} className="card" role="button" tabIndex={0} onClick={() => onOpen(doc.id)}>
             <div className="card-top">
               <span className="card-domain">
-                <img
-                  className="favicon"
-                  alt=""
-                  src={`https://www.google.com/s2/favicons?domain=${hostOf(doc.url)}`}
-                />
+                <img className="favicon" alt="" src={`https://www.google.com/s2/favicons?domain=${hostOf(doc.url)}`} />
                 {hostOf(doc.url)}
               </span>
-              <button
-                className="card-delete"
-                aria-label="削除"
-                onClick={(e) => remove(e, doc.id, doc.title)}
-              >
+              <button className="card-delete" aria-label="削除" onClick={(e) => remove(e, doc.id, doc.title)}>
                 🗑
               </button>
             </div>
@@ -215,9 +169,7 @@ export function LibraryPage({
         ))}
       </div>
 
-      {result && result.total === 0 && (
-        <p className="empty">保存された記事はまだありません。上のバーにURLを貼って始めましょう。</p>
-      )}
+      {result && result.total === 0 && <p className="empty">保存された記事はまだありません。上のバーにURLを貼って始めましょう。</p>}
 
       <div className="pager">
         <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>

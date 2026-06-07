@@ -8,7 +8,7 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    database_url: str = "sqlite:///./sokudoku.db"
+    database_url: str = "sqlite:///./marker.db"
     # 注釈/分類に使うLLMプロバイダ: "ollama" | "gemini"
     llm_provider: str = "ollama"
     gemini_api_key: str = ""

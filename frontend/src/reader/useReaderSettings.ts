@@ -16,7 +16,7 @@ export const DEFAULT_SETTINGS: ReaderSettings = {
   accent: "#f0a338",
 };
 
-const KEY = "sokudoku.reader.settings";
+const KEY = "marker.reader.settings";
 
 function load(): ReaderSettings {
   try {

@@ -1,12 +1,12 @@
-name: sokudoku
+name: marker
 
 services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: sokudoku
-      POSTGRES_PASSWORD: sokudoku
-      POSTGRES_DB: sokudoku
+      POSTGRES_USER: marker
+      POSTGRES_PASSWORD: marker
+      POSTGRES_DB: marker
     volumes:
       - db-data:/var/lib/postgresql/data
     # DBはホストに公開しない: backend はコンテナ内ネットワークで db:5432 に接続するため不要。
@@ -17,7 +17,7 @@ services:
     expose:
       - "5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U sokudoku"]
+      test: ["CMD-SHELL", "pg_isready -U marker"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -32,7 +32,7 @@ services:
   backend:
     build: ./backend
     environment:
-      DATABASE_URL: postgresql+psycopg2://sokudoku:sokudoku@db:5432/sokudoku
+      DATABASE_URL: postgresql+psycopg2://marker:marker@db:5432/marker
       LLM_PROVIDER: ${LLM_PROVIDER:-ollama}
       OLLAMA_URL: http://host.docker.internal:11434
       OLLAMA_MODEL: ${OLLAMA_MODEL:-phi4}

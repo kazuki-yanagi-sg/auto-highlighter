@@ -15,7 +15,7 @@ def create_app(database: Database | None = None) -> FastAPI:
     db.create_all()
     deps.set_database(db)
 
-    app = FastAPI(title="速読支援アプリ API")
+    app = FastAPI(title="マーカ支援アプリ API")
 
     app.add_middleware(
         CORSMiddleware,
