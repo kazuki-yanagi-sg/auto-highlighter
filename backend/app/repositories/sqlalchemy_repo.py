@@ -39,6 +39,8 @@ def _segment_from_row(row: SegmentRow) -> Segment:
         text=row.text,
         marker=_marker_from_db(row.marker),
         page=row.page,
+        block=row.block,
+        kind=row.kind,
     )
 
 
@@ -84,6 +86,8 @@ class SqlAlchemyDocumentRepository(DocumentRepository):
                     text=s.text,
                     marker=_marker_to_db(s.marker),
                     page=s.page,
+                    block=s.block,
+                    kind=s.kind,
                 )
                 for s in document.segments
             ],

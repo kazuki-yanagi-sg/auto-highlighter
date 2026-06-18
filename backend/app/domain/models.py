@@ -18,12 +18,19 @@ class Color(str, Enum):
 
 @dataclass
 class Segment:
-    """本文を文単位に分割した1単位。order で順序、page で所属ページを表す。"""
+    """本文を文単位に分割した1単位。order で順序、page で所属ページを表す。
+
+    block は同じ段落(元ブロック)に属する文をまとめる識別子。表示側はこれで
+    段落をグループ化し、改行・段落構造を保って描画する。
+    """
 
     order: int
     text: str
     marker: Color | None = None
     page: int = 0
+    block: int = 0
+    # "text"(地の文) または "code"(コードブロック。原文のまま等幅表示する)。
+    kind: str = "text"
     id: int | None = None
     document_id: int | None = None
 

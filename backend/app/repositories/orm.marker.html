@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>orm.py — マーカー</title>
+<style>
+  :root {
+    --paper: #f7eedd;
+    --paper-2: #fcf6ea;
+    --paper-edge: #eadfc8;
+    --paper-ink: #2c2419;
+    --paper-line: rgba(64, 50, 32, 0.13);
+    --mk-red: #ff5c57;
+    --mk-yellow: #ffc83d;
+    --mk-blue: #4d9bff;
+    --mk-green: #34d399;
+    --mk-opacity: 0.42;
+    --reading-size: 20px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #e7dcc4;
+    color: var(--paper-ink);
+    font-family: "Hiragino Sans", "Yu Gothic", "Noto Sans JP", system-ui, sans-serif;
+    line-height: 1.9;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 32px 20px 96px; }
+  h1 { font-size: 24px; margin: 0 0 6px; }
+  .sub { color: rgba(44, 36, 25, 0.6); font-size: 13px; margin-bottom: 20px; }
+
+  /* 凡例 */
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 18px; }
+  .legend-item {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--paper-2); border: 1px solid var(--paper-line);
+    border-radius: 999px; padding: 6px 12px; font-size: 13px;
+  }
+  .legend-item .dot { width: 12px; height: 12px; border-radius: 3px; }
+
+  /* 音声プレイヤー */
+  .voice { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 24px; }
+  .voice-btn {
+    border: 1px solid var(--paper-line); background: var(--paper-2);
+    color: var(--paper-ink); border-radius: 999px; padding: 8px 14px;
+    font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 7px;
+  }
+  .voice-btn::before { content: ""; width: 10px; height: 10px; border-radius: 3px; }
+  .voice-btn[data-color="red"]::before { background: var(--mk-red); }
+  .voice-btn[data-color="yellow"]::before { background: var(--mk-yellow); }
+  .voice-btn[data-color="blue"]::before { background: var(--mk-blue); }
+  .voice-btn[data-color="green"]::before { background: var(--mk-green); }
+  .voice-btn[data-color="stop"]::before { display: none; }
+  .voice-btn:hover { filter: brightness(0.97); }
+  .voice-btn.playing { outline: 2px solid var(--mk-red); }
+
+  /* 本文(紙) */
+  .paper {
+    background: linear-gradient(var(--paper-2), var(--paper));
+    border: 1px solid var(--paper-edge);
+    border-radius: 14px; padding: 36px 34px;
+    box-shadow: 0 24px 60px -32px rgba(0, 0, 0, 0.35);
+    font-size: var(--reading-size);
+  }
+  .paper p { margin: 0 0 1.1em; }
+
+  /* マーカー(半透明蛍光ペン) */
+  .mk {
+    border-radius: 2px; padding: 0.04em 0.12em; margin: 0 -0.04em;
+    box-decoration-break: clone; -webkit-box-decoration-break: clone;
+    opacity: var(--mk-opacity); transition: filter 0.15s ease;
+  }
+  .mk:hover { filter: saturate(1.25) brightness(1.03); }
+  .mk-red { background: var(--mk-red); box-shadow: inset 0 -0.12em 0 rgba(229, 65, 59, 0.55); }
+  .mk-yellow { background: var(--mk-yellow); box-shadow: inset 0 -0.12em 0 rgba(217, 154, 0, 0.5); }
+  .mk-blue { background: var(--mk-blue); box-shadow: inset 0 -0.12em 0 rgba(46, 123, 224, 0.5); }
+  .mk-green { background: var(--mk-green); box-shadow: inset 0 -0.12em 0 rgba(20, 160, 109, 0.5); }
+
+  /* 理由の付箋(なぜこの色を引いたか = ナレッジ) */
+  .note {
+    display: inline-block;
+    vertical-align: middle;
+    font-size: 12.5px;
+    line-height: 1.5;
+    margin: 0 4px;
+    padding: 5px 9px;
+    border-radius: 4px;
+    border-left: 4px solid var(--paper-line);
+    background: #fff9c4;
+    color: #3a3320;
+    box-shadow: 1px 2px 6px rgba(0, 0, 0, 0.16);
+    transform: rotate(-0.8deg);
+    max-width: 260px;
+    white-space: normal;
+  }
+  .note::before { content: "📌 "; }
+  .note-red { border-left-color: var(--mk-red); background: #ffe3e1; }
+  .note-yellow { border-left-color: var(--mk-yellow); background: #fff3c9; }
+  .note-blue { border-left-color: var(--mk-blue); background: #e1edff; }
+  .note-green { border-left-color: var(--mk-green); background: #d9f5e9; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>orm.py</h1>
+    <div class="sub">AIが4色マーカーで「読む補助線」を引いています。原文は要約していません。</div>
+
+    <div class="legend">
+      <span class="legend-item"><span class="dot" style="background:var(--mk-red)"></span>重要 — 主張の核</span>
+      <span class="legend-item"><span class="dot" style="background:var(--mk-yellow)"></span>注意 — なぜ?・根拠が薄い</span>
+      <span class="legend-item"><span class="dot" style="background:var(--mk-blue)"></span>参照 — 出典・引用</span>
+      <span class="legend-item"><span class="dot" style="background:var(--mk-green)"></span>具体例 — 事例</span>
+    </div>
+
+    <div class="voice">
+      <button class="voice-btn" data-color="red">重要を読む</button>
+      <button class="voice-btn" data-color="yellow">注意を読む</button>
+      <button class="voice-btn" data-color="blue">参照を読む</button>
+      <button class="voice-btn" data-color="green">具体例を読む</button>
+      <button class="voice-btn" data-color="stop">■ 停止</button>
+    </div>
+
+    <div class="paper" id="paper"></div>
+  </div>
+
+<script>
+  // segment_id 順に並ぶ文配列。color は red|yellow|blue|green|null(マーカーなし)。
+  // reason はこの色を引いた理由(日本語)。color が付く文には必ず入れる。
+  // paragraph_break が true の文の前で段落を改める。
+  const SEGMENTS = [
+  {
+    "text": "\"\"\"SQLAlchemy テーブル定義。ドメインモデルとは分離する(永続化の都合をdomainに漏らさない)。\"\"\"",
+    "color": "red",
+    "reason": "このモジュールの責務＝永続化とドメインの分離方針を定義する核",
+    "paragraph_break": true
+  },
+  {
+    "text": "from __future__ import annotations",
+    "color": "blue",
+    "reason": "将来の型アノテーション機能を参照",
+    "paragraph_break": true
+  },
+  {
+    "text": "from datetime import datetime, timezone",
+    "color": "blue",
+    "reason": "日時型を外部から参照"
+  },
+  {
+    "text": "from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text",
+    "color": "blue",
+    "reason": "カラム型を SQLAlchemy から参照"
+  },
+  {
+    "text": "from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship",
+    "color": "blue",
+    "reason": "ORM マッピング機能を参照"
+  },
+  {
+    "text": "def _utcnow() -> datetime:",
+    "color": null,
+    "paragraph_break": true
+  },
+  {
+    "text": "return datetime.now(timezone.utc)",
+    "color": "green",
+    "reason": "UTC の現在時刻という具体値を返す"
+  },
+  {
+    "text": "class Base(DeclarativeBase):",
+    "color": "red",
+    "reason": "全テーブルの基底クラス＝永続化の土台",
+    "paragraph_break": true
+  },
+  {
+    "text": "pass",
+    "color": null
+  },
+  {
+    "text": "class DocumentRow(Base):",
+    "color": "red",
+    "reason": "文書テーブルの定義",
+    "paragraph_break": true
+  },
+  {
+    "text": "__tablename__ = \"documents\"",
+    "color": "green",
+    "reason": "テーブル名の具体値"
+  },
+  {
+    "text": "id: Mapped[int] = mapped_column(Integer, primary_key=True)",
+    "color": null
+  },
+  {
+    "text": "url: Mapped[str] = mapped_column(String(2048))",
+    "color": "green",
+    "reason": "URL 列の最大長 2048 という具体指定"
+  },
+  {
+    "text": "title: Mapped[str] = mapped_column(String(512))",
+    "color": "green",
+    "reason": "タイトル列の最大長 512 という具体指定"
+  },
+  {
+    "text": "category: Mapped[str | None] = mapped_column(String(64), nullable=True)",
+    "color": "yellow",
+    "reason": "null 許容＝未設定を許す点に注意"
+  },
+  {
+    "text": "created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)",
+    "color": "green",
+    "reason": "作成時刻のデフォルトを具体指定"
+  },
+  {
+    "text": "segments: Mapped[list[\"SegmentRow\"]] = relationship(back_populates=\"document\", cascade=\"all, delete-orphan\", order_by=\"SegmentRow.order\")",
+    "color": "red",
+    "reason": "文書→文の1対多関係（削除カスケード）を定義する核"
+  },
+  {
+    "text": "notes: Mapped[list[\"NoteRow\"]] = relationship(back_populates=\"document\", cascade=\"all, delete-orphan\", order_by=\"NoteRow.id\")",
+    "color": "red",
+    "reason": "文書→付箋の1対多関係を定義する核"
+  },
+  {
+    "text": "class SegmentRow(Base):",
+    "color": "red",
+    "reason": "文セグメントテーブルの定義",
+    "paragraph_break": true
+  },
+  {
+    "text": "__tablename__ = \"segments\"",
+    "color": "green",
+    "reason": "テーブル名の具体値"
+  },
+  {
+    "text": "id: Mapped[int] = mapped_column(Integer, primary_key=True)",
+    "color": null
+  },
+  {
+    "text": "document_id: Mapped[int] = mapped_column(ForeignKey(\"documents.id\"))",
+    "color": "blue",
+    "reason": "文書テーブルへの外部キー参照"
+  },
+  {
+    "text": "order: Mapped[int] = mapped_column(Integer)",
+    "color": null
+  },
+  {
+    "text": "text: Mapped[str] = mapped_column(Text)",
+    "color": "red",
+    "reason": "原文そのものを保持する核の列"
+  },
+  {
+    "text": "marker: Mapped[str | None] = mapped_column(String(16), nullable=True)",
+    "color": "red",
+    "reason": "4色マーカーの色を保持する本機能の核"
+  },
+  {
+    "text": "page: Mapped[int] = mapped_column(Integer, default=0)",
+    "color": null
+  },
+  {
+    "text": "# 段落グループ識別子。表示側で同じ block の文を1段落にまとめる。",
+    "color": "yellow",
+    "reason": "表示側のまとめ方を決める運用ルールの注意書き"
+  },
+  {
+    "text": "block: Mapped[int] = mapped_column(Integer, default=0, server_default=\"0\")",
+    "color": "green",
+    "reason": "server_default=\"0\" という具体デフォルト"
+  },
+  {
+    "text": "document: Mapped[DocumentRow] = relationship(back_populates=\"segments\")",
+    "color": null
+  },
+  {
+    "text": "class NoteRow(Base):",
+    "color": "red",
+    "reason": "付箋（正方形コメント）テーブルの定義",
+    "paragraph_break": true
+  },
+  {
+    "text": "__tablename__ = \"sticky_notes\"",
+    "color": "green",
+    "reason": "テーブル名の具体値"
+  },
+  {
+    "text": "id: Mapped[int] = mapped_column(Integer, primary_key=True)",
+    "color": null
+  },
+  {
+    "text": "document_id: Mapped[int] = mapped_column(ForeignKey(\"documents.id\"))",
+    "color": "blue",
+    "reason": "文書テーブルへの外部キー参照"
+  },
+  {
+    "text": "segment_id: Mapped[int | None] = mapped_column(ForeignKey(\"segments.id\"), nullable=True)",
+    "color": "blue",
+    "reason": "どの文に紐づくかの参照（null 可）"
+  },
+  {
+    "text": "body: Mapped[str] = mapped_column(Text)",
+    "color": "red",
+    "reason": "付箋本文を保持する核の列"
+  },
+  {
+    "text": "page: Mapped[int] = mapped_column(Integer, default=0)",
+    "color": null
+  },
+  {
+    "text": "x: Mapped[float] = mapped_column(Float, default=0.0)",
+    "color": "green",
+    "reason": "貼付座標 x のデフォルト具体値"
+  },
+  {
+    "text": "y: Mapped[float] = mapped_column(Float, default=0.0)",
+    "color": null
+  },
+  {
+    "text": "w: Mapped[float] = mapped_column(Float, default=176.0)",
+    "color": "green",
+    "reason": "付箋の幅 176.0 という具体デフォルト"
+  },
+  {
+    "text": "h: Mapped[float] = mapped_column(Float, default=150.0)",
+    "color": "green",
+    "reason": "付箋の高さ 150.0 という具体デフォルト"
+  },
+  {
+    "text": "created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)",
+    "color": null
+  },
+  {
+    "text": "document: Mapped[DocumentRow] = relationship(back_populates=\"notes\")",
+    "color": null
+  }
+];
+
+  const CLASS = { red: "mk mk-red", yellow: "mk mk-yellow", blue: "mk mk-blue", green: "mk mk-green" };
+
+  function render() {
+    const paper = document.getElementById("paper");
+    let p = document.createElement("p");
+    paper.appendChild(p);
+    SEGMENTS.forEach((seg, i) => {
+      if (seg.paragraph_break && p.childNodes.length) {
+        p = document.createElement("p");
+        paper.appendChild(p);
+      }
+      const node = seg.color ? document.createElement("span") : document.createTextNode(seg.text);
+      if (seg.color) {
+        node.className = CLASS[seg.color] || "";
+        node.textContent = seg.text;
+      }
+      p.appendChild(node);
+      if (seg.color && seg.reason) {
+        const note = document.createElement("span");
+        note.className = "note note-" + seg.color;
+        note.textContent = seg.reason;
+        p.appendChild(note);
+      }
+    });
+  }
+
+  function speak(color) {
+    window.speechSynthesis.cancel();
+    const text = SEGMENTS.filter((s) => s.color === color).map((s) => s.text).join(" ");
+    if (!text) return;
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "ja-JP";
+    window.speechSynthesis.speak(u);
+  }
+
+  document.querySelectorAll(".voice-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const color = btn.dataset.color;
+      if (color === "stop") { window.speechSynthesis.cancel(); return; }
+      speak(color);
+    });
+  });
+
+  render();
+</script>
+</body>
+</html>

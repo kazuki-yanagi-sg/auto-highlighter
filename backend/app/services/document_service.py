@@ -51,7 +51,8 @@ class DocumentService:
         self, document: Document, progress: ProgressFn | None = None
     ) -> None:
         """バッチ注釈→各バッチ後にDB反映＋進捗通知。最後にカテゴリ分類。"""
-        segments = document.segments
+        # コードブロックはマーカー対象外(地の文だけを注釈する)。
+        segments = [s for s in document.segments if s.kind != "code"]
         total = max(1, (len(segments) + ANNOTATE_BATCH - 1) // ANNOTATE_BATCH)
         accumulated: dict[int, str] = {}
         if progress:

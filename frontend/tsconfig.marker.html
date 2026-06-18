@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>tsconfig.json — マーカー</title>
+<style>
+  :root {
+    --paper: #f7eedd;
+    --paper-2: #fcf6ea;
+    --paper-edge: #eadfc8;
+    --paper-ink: #2c2419;
+    --paper-line: rgba(64, 50, 32, 0.13);
+    --mk-red: #ff5c57;
+    --mk-yellow: #ffc83d;
+    --mk-blue: #4d9bff;
+    --mk-green: #34d399;
+    --mk-opacity: 0.42;
+    --reading-size: 20px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #e7dcc4;
+    color: var(--paper-ink);
+    font-family: "Hiragino Sans", "Yu Gothic", "Noto Sans JP", system-ui, sans-serif;
+    line-height: 1.9;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 32px 20px 96px; }
+  h1 { font-size: 24px; margin: 0 0 6px; }
+  .sub { color: rgba(44, 36, 25, 0.6); font-size: 13px; margin-bottom: 20px; }
+
+  /* 凡例 */
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 18px; }
+  .legend-item {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--paper-2); border: 1px solid var(--paper-line);
+    border-radius: 999px; padding: 6px 12px; font-size: 13px;
+  }
+  .legend-item .dot { width: 12px; height: 12px; border-radius: 3px; }
+
+  /* 音声プレイヤー */
+  .voice { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 24px; }
+  .voice-btn {
+    border: 1px solid var(--paper-line); background: var(--paper-2);
+    color: var(--paper-ink); border-radius: 999px; padding: 8px 14px;
+    font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 7px;
+  }
+  .voice-btn::before { content: ""; width: 10px; height: 10px; border-radius: 3px; }
+  .voice-btn[data-color="red"]::before { background: var(--mk-red); }
+  .voice-btn[data-color="yellow"]::before { background: var(--mk-yellow); }
+  .voice-btn[data-color="blue"]::before { background: var(--mk-blue); }
+  .voice-btn[data-color="green"]::before { background: var(--mk-green); }
+  .voice-btn[data-color="stop"]::before { display: none; }
+  .voice-btn:hover { filter: brightness(0.97); }
+  .voice-btn.playing { outline: 2px solid var(--mk-red); }
+
+  /* 本文(紙) */
+  .paper {
+    background: linear-gradient(var(--paper-2), var(--paper));
+    border: 1px solid var(--paper-edge);
+    border-radius: 14px; padding: 36px 34px;
+    box-shadow: 0 24px 60px -32px rgba(0, 0, 0, 0.35);
+    font-size: var(--reading-size);
+  }
+  .paper p { margin: 0 0 1.1em; }
+
+  /* マーカー(半透明蛍光ペン) */
+  .mk {
+    border-radius: 2px; padding: 0.04em 0.12em; margin: 0 -0.04em;
+    box-decoration-break: clone; -webkit-box-decoration-break: clone;
+    opacity: var(--mk-opacity); transition: filter 0.15s ease;
+  }
+  .mk:hover { filter: saturate(1.25) brightness(1.03); }
+  .mk-red { background: var(--mk-red); box-shadow: inset 0 -0.12em 0 rgba(229, 65, 59, 0.55); }
+  .mk-yellow { background: var(--mk-yellow); box-shadow: inset 0 -0.12em 0 rgba(217, 154, 0, 0.5); }
+  .mk-blue { background: var(--mk-blue); box-shadow: inset 0 -0.12em 0 rgba(46, 123, 224, 0.5); }
+  .mk-green { background: var(--mk-green); box-shadow: inset 0 -0.12em 0 rgba(20, 160, 109, 0.5); }
+
+  /* 理由の付箋(なぜこの色を引いたか = ナレッジ) */
+  .note {
+    display: inline-block;
+    vertical-align: middle;
+    font-size: 12.5px;
+    line-height: 1.5;
+    margin: 0 4px;
+    padding: 5px 9px;
+    border-radius: 4px;
+    border-left: 4px solid var(--paper-line);
+    background: #fff9c4;
+    color: #3a3320;
+    box-shadow: 1px 2px 6px rgba(0, 0, 0, 0.16);
+    transform: rotate(-0.8deg);
+    max-width: 260px;
+    white-space: normal;
+  }
+  .note::before { content: "📌 "; }
+  .note-red { border-left-color: var(--mk-red); background: #ffe3e1; }
+  .note-yellow { border-left-color: var(--mk-yellow); background: #fff3c9; }
+  .note-blue { border-left-color: var(--mk-blue); background: #e1edff; }
+  .note-green { border-left-color: var(--mk-green); background: #d9f5e9; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>tsconfig.json</h1>
+    <div class="sub">AIが4色マーカーで「読む補助線」を引いています。原文は要約していません。</div>
+
+    <div class="legend">
+      <span class="legend-item"><span class="dot" style="background:var(--mk-red)"></span>重要 — 主張の核</span>
+      <span class="legend-item"><span class="dot" style="background:var(--mk-yellow)"></span>注意 — なぜ?・根拠が薄い</span>
+      <span class="legend-item"><span class="dot" style="background:var(--mk-blue)"></span>参照 — 出典・引用</span>
+      <span class="legend-item"><span class="dot" style="background:var(--mk-green)"></span>具体例 — 事例</span>
+    </div>
+
+    <div class="voice">
+      <button class="voice-btn" data-color="red">重要を読む</button>
+      <button class="voice-btn" data-color="yellow">注意を読む</button>
+      <button class="voice-btn" data-color="blue">参照を読む</button>
+      <button class="voice-btn" data-color="green">具体例を読む</button>
+      <button class="voice-btn" data-color="stop">■ 停止</button>
+    </div>
+
+    <div class="paper" id="paper"></div>
+  </div>
+
+<script>
+  // segment_id 順に並ぶ文配列。color は red|yellow|blue|green|null(マーカーなし)。
+  // reason はこの色を引いた理由(日本語)。color が付く文には必ず入れる。
+  // paragraph_break が true の文の前で段落を改める。
+  const SEGMENTS = [
+  {
+    "text": "\"compilerOptions\": {",
+    "color": null,
+    "paragraph_break": true
+  },
+  {
+    "text": "\"target\": \"ES2020\",",
+    "color": "green",
+    "reason": "出力するJS仕様の具体バージョン(ES2020)"
+  },
+  {
+    "text": "\"useDefineForClassFields\": true,",
+    "color": null
+  },
+  {
+    "text": "\"lib\": [\"ES2020\", \"DOM\", \"DOM.Iterable\"],",
+    "color": null
+  },
+  {
+    "text": "\"module\": \"ESNext\",",
+    "color": null
+  },
+  {
+    "text": "\"skipLibCheck\": true,",
+    "color": null
+  },
+  {
+    "text": "\"moduleResolution\": \"bundler\",",
+    "color": null
+  },
+  {
+    "text": "\"allowImportingTsExtensions\": true,",
+    "color": null
+  },
+  {
+    "text": "\"resolveJsonModule\": true,",
+    "color": null
+  },
+  {
+    "text": "\"isolatedModules\": true,",
+    "color": null
+  },
+  {
+    "text": "\"noEmit\": true,",
+    "color": "yellow",
+    "reason": "型検査のみ実行しJSは出力しない。ビルドはVite等が担当する注意点"
+  },
+  {
+    "text": "\"jsx\": \"react-jsx\",",
+    "color": null
+  },
+  {
+    "text": "\"strict\": true,",
+    "color": "red",
+    "reason": "全strict系チェックを一括有効化。この設定の型安全方針の核"
+  },
+  {
+    "text": "\"noUnusedLocals\": true,",
+    "color": "yellow",
+    "reason": "未使用のローカル変数をエラーにして検出"
+  },
+  {
+    "text": "\"noUnusedParameters\": true,",
+    "color": null
+  },
+  {
+    "text": "\"noFallthroughCasesInSwitch\": true,",
+    "color": "yellow",
+    "reason": "switchのフォールスルー(break漏れ)を禁止"
+  },
+  {
+    "text": "\"types\": [\"vitest/globals\", \"@testing-library/jest-dom\"]",
+    "color": null
+  },
+  {
+    "text": "\"include\": [\"src\"]",
+    "color": null
+  }
+];
+
+  const CLASS = { red: "mk mk-red", yellow: "mk mk-yellow", blue: "mk mk-blue", green: "mk mk-green" };
+
+  function render() {
+    const paper = document.getElementById("paper");
+    let p = document.createElement("p");
+    paper.appendChild(p);
+    SEGMENTS.forEach((seg, i) => {
+      if (seg.paragraph_break && p.childNodes.length) {
+        p = document.createElement("p");
+        paper.appendChild(p);
+      }
+      const node = seg.color ? document.createElement("span") : document.createTextNode(seg.text);
+      if (seg.color) {
+        node.className = CLASS[seg.color] || "";
+        node.textContent = seg.text;
+      }
+      p.appendChild(node);
+      if (seg.color && seg.reason) {
+        const note = document.createElement("span");
+        note.className = "note note-" + seg.color;
+        note.textContent = seg.reason;
+        p.appendChild(note);
+      }
+    });
+  }
+
+  function speak(color) {
+    window.speechSynthesis.cancel();
+    const text = SEGMENTS.filter((s) => s.color === color).map((s) => s.text).join(" ");
+    if (!text) return;
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "ja-JP";
+    window.speechSynthesis.speak(u);
+  }
+
+  document.querySelectorAll(".voice-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const color = btn.dataset.color;
+      if (color === "stop") { window.speechSynthesis.cancel(); return; }
+      speak(color);
+    });
+  });
+
+  render();
+</script>
+</body>
+</html>

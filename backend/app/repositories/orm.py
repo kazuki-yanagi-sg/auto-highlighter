@@ -46,6 +46,10 @@ class SegmentRow(Base):
     text: Mapped[str] = mapped_column(Text)
     marker: Mapped[str | None] = mapped_column(String(16), nullable=True)
     page: Mapped[int] = mapped_column(Integer, default=0)
+    # 段落グループ識別子。表示側で同じ block の文を1段落にまとめる。
+    block: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    # "text" or "code"。code は原文のまま等幅表示する。
+    kind: Mapped[str] = mapped_column(String(16), default="text", server_default="text")
 
     document: Mapped[DocumentRow] = relationship(back_populates="segments")
 

@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>backend/app/db.py — マーカー</title>
+<style>
+  :root {
+    --paper: #f7eedd;
+    --paper-2: #fcf6ea;
+    --paper-edge: #eadfc8;
+    --paper-ink: #2c2419;
+    --paper-line: rgba(64, 50, 32, 0.13);
+    --mk-red: #ff5c57;
+    --mk-yellow: #ffc83d;
+    --mk-blue: #4d9bff;
+    --mk-green: #34d399;
+    --mk-opacity: 0.42;
+    --reading-size: 20px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #e7dcc4;
+    color: var(--paper-ink);
+    font-family: "Hiragino Sans", "Yu Gothic", "Noto Sans JP", system-ui, sans-serif;
+    line-height: 1.9;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 32px 20px 96px; }
+  h1 { font-size: 24px; margin: 0 0 6px; }
+  .sub { color: rgba(44, 36, 25, 0.6); font-size: 13px; margin-bottom: 20px; }
+
+  /* 凡例 */
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 18px; }
+  .legend-item {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--paper-2); border: 1px solid var(--paper-line);
+    border-radius: 999px; padding: 6px 12px; font-size: 13px;
+  }
+  .legend-item .dot { width: 12px; height: 12px; border-radius: 3px; }
+
+  /* 音声プレイヤー */
+  .voice { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 24px; }
+  .voice-btn {
+    border: 1px solid var(--paper-line); background: var(--paper-2);
+    color: var(--paper-ink); border-radius: 999px; padding: 8px 14px;
+    font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 7px;
+  }
+  .voice-btn::before { content: ""; width: 10px; height: 10px; border-radius: 3px; }
+  .voice-btn[data-color="red"]::before { background: var(--mk-red); }
+  .voice-btn[data-color="yellow"]::before { background: var(--mk-yellow); }
+  .voice-btn[data-color="blue"]::before { background: var(--mk-blue); }
+  .voice-btn[data-color="green"]::before { background: var(--mk-green); }
+  .voice-btn[data-color="stop"]::before { display: none; }
+  .voice-btn:hover { filter: brightness(0.97); }
+  .voice-btn.playing { outline: 2px solid var(--mk-red); }
+
+  /* 本文(紙) */
+  .paper {
+    background: linear-gradient(var(--paper-2), var(--paper));
+    border: 1px solid var(--paper-edge);
+    border-radius: 14px; padding: 36px 34px;
+    box-shadow: 0 24px 60px -32px rgba(0, 0, 0, 0.35);
+    font-size: var(--reading-size);
+  }
+  .paper p { margin: 0 0 1.1em; }
+
+  /* マーカー(半透明蛍光ペン) */
+  .mk {
+    border-radius: 2px; padding: 0.04em 0.12em; margin: 0 -0.04em;
+    box-decoration-break: clone; -webkit-box-decoration-break: clone;
+    opacity: var(--mk-opacity); transition: filter 0.15s ease;
+  }
+  .mk:hover { filter: saturate(1.25) brightness(1.03); }
+  .mk-red { background: var(--mk-red); box-shadow: inset 0 -0.12em 0 rgba(229, 65, 59, 0.55); }
+  .mk-yellow { background: var(--mk-yellow); box-shadow: inset 0 -0.12em 0 rgba(217, 154, 0, 0.5); }
+  .mk-blue { background: var(--mk-blue); box-shadow: inset 0 -0.12em 0 rgba(46, 123, 224, 0.5); }
+  .mk-green { background: var(--mk-green); box-shadow: inset 0 -0.12em 0 rgba(20, 160, 109, 0.5); }
+
+  /* 理由の付箋(なぜこの色を引いたか = ナレッジ) */
+  .note {
+    display: inline-block;
+    vertical-align: middle;
+    font-size: 12.5px;
+    line-height: 1.5;
+    margin: 0 4px;
+    padding: 5px 9px;
+    border-radius: 4px;
+    border-left: 4px solid var(--paper-line);
+    background: #fff9c4;
+    color: #3a3320;
+    box-shadow: 1px 2px 6px rgba(0, 0, 0, 0.16);
+    transform: rotate(-0.8deg);
+    max-width: 260px;
+    white-space: normal;
+  }
+  .note::before { content: "📌 "; }
+  .note-red { border-left-color: var(--mk-red); background: #ffe3e1; }
+  .note-yellow { border-left-color: var(--mk-yellow); background: #fff3c9; }
+  .note-blue { border-left-color: var(--mk-blue); background: #e1edff; }
+  .note-green { border-left-color: var(--mk-green); background: #d9f5e9; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>backend/app/db.py</h1>
+    <div class="sub">AIが4色マーカーで「読む補助線」を引いています。原文は要約していません。</div>
+
+    <div class="legend">
+      <span class="legend-item"><span class="dot" style="background:var(--mk-red)"></span>重要 — 主張の核</span>
+      <span class="legend-item"><span class="dot" style="background:var(--mk-yellow)"></span>注意 — なぜ?・根拠が薄い</span>
+      <span class="legend-item"><span class="dot" style="background:var(--mk-blue)"></span>参照 — 出典・引用</span>
+      <span class="legend-item"><span class="dot" style="background:var(--mk-green)"></span>具体例 — 事例</span>
+    </div>
+
+    <div class="voice">
+      <button class="voice-btn" data-color="red">重要を読む</button>
+      <button class="voice-btn" data-color="yellow">注意を読む</button>
+      <button class="voice-btn" data-color="blue">参照を読む</button>
+      <button class="voice-btn" data-color="green">具体例を読む</button>
+      <button class="voice-btn" data-color="stop">■ 停止</button>
+    </div>
+
+    <div class="paper" id="paper"></div>
+  </div>
+
+<script>
+  // segment_id 順に並ぶ文配列。color は red|yellow|blue|green|null(マーカーなし)。
+  // reason はこの色を引いた理由(日本語)。color が付く文には必ず入れる。
+  // paragraph_break が true の文の前で段落を改める。
+  const SEGMENTS = [
+  {
+    "text": "\"\"\"DB接続のセットアップ。",
+    "color": "red",
+    "reason": "このモジュールの主目的＝DB接続のセットアップ",
+    "paragraph_break": true
+  },
+  {
+    "text": "URLに応じてエンジンを構築する。",
+    "color": null
+  },
+  {
+    "text": "SQLite in-memory はテストで使うため StaticPool で1コネクションを共有する。",
+    "color": "green",
+    "reason": "テスト用にStaticPoolで1コネクションを共有する具体方針",
+    "paragraph_break": true
+  },
+  {
+    "text": "from __future__ import annotations",
+    "color": null,
+    "paragraph_break": true
+  },
+  {
+    "text": "from sqlalchemy import create_engine, inspect, text",
+    "color": null,
+    "paragraph_break": true
+  },
+  {
+    "text": "from sqlalchemy.orm import Session, sessionmaker",
+    "color": null
+  },
+  {
+    "text": "from sqlalchemy.pool import StaticPool",
+    "color": null
+  },
+  {
+    "text": "from app.repositories.orm import Base",
+    "color": null,
+    "paragraph_break": true
+  },
+  {
+    "text": "# create_all は既存テーブルに列を足さないため、後付け列を冪等に追加する軽量マイグレーション。",
+    "color": "yellow",
+    "reason": "create_allは既存テーブルに列を足さないという落とし穴への対処",
+    "paragraph_break": true
+  },
+  {
+    "text": "# (name, ddl) の ddl は ALTER TABLE ... ADD COLUMN の本体。",
+    "color": null
+  },
+  {
+    "text": "SQLite/Postgres 両対応。",
+    "color": null
+  },
+  {
+    "text": "_ADDED_COLUMNS: dict[str, list[tuple[str, str]]] = {",
+    "color": null
+  },
+  {
+    "text": "\"segments\": [(\"block\", \"block INTEGER NOT NULL DEFAULT 0\")],",
+    "color": "green",
+    "reason": "後付けする具体的な列定義（segments.block）"
+  },
+  {
+    "text": "def _make_engine(url: str):",
+    "color": null,
+    "paragraph_break": true
+  },
+  {
+    "text": "if url in (\"sqlite://\", \"sqlite:///:memory:\"):",
+    "color": null
+  },
+  {
+    "text": "return create_engine(",
+    "color": null
+  },
+  {
+    "text": "url,",
+    "color": null
+  },
+  {
+    "text": "connect_args={\"check_same_thread\": False},",
+    "color": null
+  },
+  {
+    "text": "poolclass=StaticPool,",
+    "color": null
+  },
+  {
+    "text": "if url.startswith(\"sqlite\"):",
+    "color": null
+  },
+  {
+    "text": "return create_engine(url, connect_args={\"check_same_thread\": False})",
+    "color": null
+  },
+  {
+    "text": "# pool_pre_ping: DB再起動などで切れた接続を使う前に検査し、自動で張り直す",
+    "color": "yellow",
+    "reason": "DB再起動で切れた接続を使う前に検査・再接続する保護策"
+  },
+  {
+    "text": "# (db コンテナが落ちても backend が500を出し続けない)。",
+    "color": null
+  },
+  {
+    "text": "return create_engine(url, pool_pre_ping=True)",
+    "color": null
+  },
+  {
+    "text": "class Database:",
+    "color": "red",
+    "reason": "このモジュールの主体となるDBアクセスクラス",
+    "paragraph_break": true
+  },
+  {
+    "text": "def __init__(self, url: str):",
+    "color": null
+  },
+  {
+    "text": "self.engine = _make_engine(url)",
+    "color": null
+  },
+  {
+    "text": "self._session_factory = sessionmaker(",
+    "color": null
+  },
+  {
+    "text": "bind=self.engine, autoflush=False, expire_on_commit=False",
+    "color": null
+  },
+  {
+    "text": "def create_all(self) -> None:",
+    "color": null,
+    "paragraph_break": true
+  },
+  {
+    "text": "Base.metadata.create_all(self.engine)",
+    "color": null
+  },
+  {
+    "text": "self._add_missing_columns()",
+    "color": null
+  },
+  {
+    "text": "def _add_missing_columns(self) -> None:",
+    "color": null,
+    "paragraph_break": true
+  },
+  {
+    "text": "\"\"\"既存テーブルに後付け列を冪等に追加する(create_all は列追加しないため)。",
+    "color": null
+  },
+  {
+    "text": "inspector = inspect(self.engine)",
+    "color": null
+  },
+  {
+    "text": "tables = set(inspector.get_table_names())",
+    "color": null
+  },
+  {
+    "text": "for table, columns in _ADDED_COLUMNS.items():",
+    "color": null
+  },
+  {
+    "text": "if table not in tables:",
+    "color": null
+  },
+  {
+    "text": "continue",
+    "color": null
+  },
+  {
+    "text": "existing = {c[\"name\"] for c in inspector.get_columns(table)}",
+    "color": null
+  },
+  {
+    "text": "missing = [(n, ddl) for n, ddl in columns if n not in existing]",
+    "color": null
+  },
+  {
+    "text": "if not missing:",
+    "color": null
+  },
+  {
+    "text": "continue",
+    "color": null
+  },
+  {
+    "text": "with self.engine.begin() as conn:",
+    "color": null
+  },
+  {
+    "text": "for _, ddl in missing:",
+    "color": null
+  },
+  {
+    "text": "conn.execute(text(f\"ALTER TABLE {table} ADD COLUMN {ddl}\"))",
+    "color": null
+  },
+  {
+    "text": "def session(self) -> Session:",
+    "color": null,
+    "paragraph_break": true
+  },
+  {
+    "text": "return self._session_factory()",
+    "color": null
+  }
+];
+
+  const CLASS = { red: "mk mk-red", yellow: "mk mk-yellow", blue: "mk mk-blue", green: "mk mk-green" };
+
+  function render() {
+    const paper = document.getElementById("paper");
+    let p = document.createElement("p");
+    paper.appendChild(p);
+    SEGMENTS.forEach((seg, i) => {
+      if (seg.paragraph_break && p.childNodes.length) {
+        p = document.createElement("p");
+        paper.appendChild(p);
+      }
+      const node = seg.color ? document.createElement("span") : document.createTextNode(seg.text);
+      if (seg.color) {
+        node.className = CLASS[seg.color] || "";
+        node.textContent = seg.text;
+      }
+      p.appendChild(node);
+      if (seg.color && seg.reason) {
+        const note = document.createElement("span");
+        note.className = "note note-" + seg.color;
+        note.textContent = seg.reason;
+        p.appendChild(note);
+      }
+    });
+  }
+
+  function speak(color) {
+    window.speechSynthesis.cancel();
+    const text = SEGMENTS.filter((s) => s.color === color).map((s) => s.text).join(" ");
+    if (!text) return;
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "ja-JP";
+    window.speechSynthesis.speak(u);
+  }
+
+  document.querySelectorAll(".voice-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const color = btn.dataset.color;
+      if (color === "stop") { window.speechSynthesis.cancel(); return; }
+      speak(color);
+    });
+  });
+
+  render();
+</script>
+</body>
+</html>

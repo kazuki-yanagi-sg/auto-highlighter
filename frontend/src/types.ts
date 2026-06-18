@@ -16,6 +16,10 @@ export interface Segment {
   text: string;
   marker: MarkerColor | null;
   page: number;
+  // 段落グループ識別子。同じ block の文を1段落にまとめて改行構造を保つ。
+  block?: number;
+  // "text"(地の文) または "code"(コードブロック。原文のまま等幅表示)。
+  kind?: "text" | "code";
 }
 
 export interface Note {

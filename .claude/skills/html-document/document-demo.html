@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<!--
+  ══════════════════════════════════════════════════════════════════
+  html-document テンプレート
+  ══════════════════════════════════════════════════════════════════
+  このファイルは **動くデモ資料** としてそのまま開ける。
+  Claude が実際の資料を作るときは:
+    1. タイトル / 日付 / 著者を差し替え
+    2. Goal / Background / DoD を差し替え
+    3. 俯瞰図(Mermaid mindmap)を差し替え
+    4. 各 Body セクションの中身(タイトル・データ・DSL)を差し替え
+    5. 不要な型のセクションは削除(最終 4〜6 セクション)
+  ══════════════════════════════════════════════════════════════════
+-->
+<html lang="ja" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>サンプル資料タイトル</title>
+
+<!-- ═══ 許可ライブラリ(バージョン固定)═══ -->
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.js"></script>
+
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root[data-theme="light"] {
+    --bg: #f6f8fa;
+    --bg-card: #ffffff;
+    --bg-deep: #f0f2f5;
+    --border: #d0d7de;
+    --text: #1f2328;
+    --text-strong: #1f2328;
+    --text-muted: #656d76;
+    --text-faint: #8b949e;
+    --accent: #2563eb;
+    --accent-light: #eff6ff;
+    --accent-border: #3b82f644;
+    --success: #16a34a;
+    --success-light: #f0fdf4;
+    --success-border: #22c55e44;
+    --warning: #d97706;
+    --warning-light: #fffbeb;
+    --warning-border: #f59e0b44;
+    --info: #7c3aed;
+    --info-light: #f5f0ff;
+    --info-border: #8b5cf644;
+    --danger: #dc2626;
+    --danger-light: #fef2f2;
+    --danger-border: #ef444444;
+    --toggle-bg: #e8ecf0;
+    --toggle-hover: #d0d7de;
+    --progress-bg: #e5e7eb;
+    --table-stripe: #f9fafb;
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d1117;
+    --bg-card: #161b22;
+    --bg-deep: #0d1117;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --text-strong: #e6edf3;
+    --text-muted: #8b949e;
+    --text-faint: #484f58;
+    --accent: #58a6ff;
+    --accent-light: #152230;
+    --accent-border: #3b82f633;
+    --success: #3fb950;
+    --success-light: #1a2215;
+    --success-border: #22c55e33;
+    --warning: #d29922;
+    --warning-light: #221a15;
+    --warning-border: #f59e0b33;
+    --info: #a78bfa;
+    --info-light: #1a1530;
+    --info-border: #8b5cf633;
+    --danger: #f85149;
+    --danger-light: #220d0d;
+    --danger-border: #ef444433;
+    --toggle-bg: #21262d;
+    --toggle-hover: #30363d;
+    --progress-bg: #30363d;
+    --table-stripe: #161b22;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html { scroll-behavior: smooth; }
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    transition: background 0.25s, color 0.25s;
+  }
+
+  /* ── Sidebar TOC ── */
+  .sidebar {
+    position: fixed; top: 0; left: 0;
+    width: 260px; height: 100vh;
+    background: var(--bg-card);
+    border-right: 1px solid var(--border);
+    padding: 20px 0;
+    overflow-y: auto;
+    z-index: 100;
+  }
+  .sidebar-header {
+    padding: 0 20px 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+  .sidebar-title { font-size: 0.85rem; font-weight: 700; color: var(--text-strong); margin-bottom: 8px; }
+  .sidebar-progress { display: flex; align-items: center; gap: 8px; }
+  .progress-bar { flex: 1; height: 6px; background: var(--progress-bg); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.3s ease; }
+  .progress-text { font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; }
+  .toc-list { list-style: none; padding: 0 12px; }
+  .toc-link {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px; border-radius: 6px;
+    text-decoration: none; color: var(--text-muted);
+    font-size: 0.82rem; line-height: 1.4;
+  }
+  .toc-link:hover { background: var(--bg); color: var(--text-strong); }
+  .toc-link.active { background: var(--accent-light); color: var(--accent); font-weight: 600; }
+  .toc-number {
+    flex: 0 0 22px; height: 22px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem; font-weight: 700; border-radius: 50%;
+    background: var(--bg-deep); color: var(--text-faint);
+  }
+  .toc-link.active .toc-number { background: var(--accent); color: #fff; }
+  .toc-number--dash { background: transparent; color: var(--text-faint); }
+
+  .main { margin-left: 260px; flex: 1; min-width: 0; }
+
+  /* ── Header ── */
+  header {
+    padding: 32px 48px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-card);
+    position: relative;
+  }
+  .doc-type {
+    font-size: 0.85rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--accent); margin-bottom: 8px;
+  }
+  header h1 { font-size: 1.85rem; color: var(--text-strong); font-weight: 800; line-height: 1.3; margin-bottom: 8px; }
+  .doc-meta { display: flex; gap: 16px; font-size: 0.9rem; color: var(--text-faint); }
+  .theme-toggle {
+    position: absolute; top: 14px; right: 24px;
+    display: flex; gap: 2px;
+    background: var(--toggle-bg); border-radius: 8px; padding: 3px;
+  }
+  .theme-toggle button {
+    border: none; background: transparent;
+    color: var(--text-muted);
+    font-size: 0.8rem; padding: 4px 12px;
+    border-radius: 6px; cursor: pointer; font-weight: 600;
+  }
+  .theme-toggle button:hover { background: var(--toggle-hover); }
+  .theme-toggle button.active { background: var(--bg-card); color: var(--text-strong); box-shadow: 0 1px 3px #00000020; }
+
+  /* ── Preamble ── */
+  .preamble {
+    padding: 24px 48px;
+    border-bottom: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 18px;
+  }
+  .preamble-section { display: flex; gap: 16px; align-items: flex-start; }
+  .preamble-body { flex: 1; min-width: 0; }
+  .preamble-label { font-size: 1.5rem; font-weight: 700; margin-bottom: 8px; }
+  .preamble-section--goal .preamble-label { color: var(--accent); }
+  .preamble-section--background .preamble-label { color: var(--info); }
+  .preamble-section--dod .preamble-label { color: var(--success); }
+  .preamble-definition { font-size: 1.05rem; font-weight: 600; color: var(--text-strong); line-height: 1.5; }
+  .preamble-list, .preamble-dod-list { list-style: none; padding: 0; margin: 0; }
+  .preamble-list li {
+    position: relative; padding-left: 16px;
+    font-size: 0.95rem; color: var(--text); line-height: 1.6; margin-bottom: 4px;
+  }
+  .preamble-list li::before {
+    content: ''; position: absolute; left: 0; top: 9px;
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--info);
+  }
+  .preamble-dod-list { counter-reset: dod; }
+  .preamble-dod-list li {
+    position: relative; padding-left: 28px;
+    font-size: 0.95rem; color: var(--text); line-height: 1.6; margin-bottom: 6px;
+    counter-increment: dod;
+  }
+  .preamble-dod-list li::before {
+    content: counter(dod);
+    position: absolute; left: 0; top: 2px;
+    width: 20px; height: 20px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem; font-weight: 700;
+    border-radius: 50%;
+    background: var(--success-light); color: var(--success);
+    border: 1px solid var(--success-border);
+  }
+
+  /* ── Overview ── */
+  .overview {
+    margin: 24px 48px 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .overview-header { padding: 18px 24px 14px; border-bottom: 1px solid var(--border); }
+  .overview-label { font-size: 1.5rem; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+  .overview-subtitle { font-size: 0.9rem; color: var(--text-muted); }
+  .overview-body { padding: 28px 24px 32px; }
+
+  /* ── Content / Section base ── */
+  .content { padding: 0 48px 48px; }
+  .section { margin-top: 48px; }
+  .section-header {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 16px; padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-number {
+    flex: 0 0 30px; height: 30px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.9rem; font-weight: 800;
+    border-radius: 50%; background: var(--accent); color: #fff;
+  }
+  .section h2 { font-size: 1.55rem; font-weight: 700; color: var(--text-strong); }
+  .section:not([class*="type-"]) .section-header::after {
+    content: '⚠ 型クラス (.type-*) が未指定';
+    margin-left: auto;
+    font-size: 0.75rem; font-weight: 700;
+    color: var(--danger);
+    background: var(--danger-light);
+    border: 1px solid var(--danger-border);
+    padding: 3px 10px; border-radius: 10px;
+  }
+
+  .fig-caption {
+    font-size: 0.82rem; color: var(--text-muted);
+    text-align: center; margin-top: 10px;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .fig-frame {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    overflow-x: auto;
+  }
+
+  /* ── Chart ── */
+  .type-chart .chart-wrap { position: relative; height: 280px; }
+
+  /* ── Gauge ── */
+  .type-gauge .gauge-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+  }
+  .type-gauge .gauge-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+  }
+  .type-gauge .gauge-canvas { position: relative; height: 140px; }
+  .type-gauge .gauge-label { font-size: 0.85rem; color: var(--text-muted); margin-top: 6px; font-weight: 600; }
+
+  /* ── Mermaid containers ── */
+  .mermaid { text-align: center; }
+  .mermaid svg { max-width: 100%; height: auto; }
+
+  /* ── Compare ── */
+  .type-compare .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 32px 1fr;
+    gap: 10px; align-items: stretch;
+  }
+  .type-compare .compare-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .type-compare .compare-card--before { border-left: 3px solid var(--danger); }
+  .type-compare .compare-card--after { border-left: 3px solid var(--success); }
+  .type-compare .compare-label {
+    font-size: 0.72rem; font-weight: 800;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .type-compare .compare-card--before .compare-label { color: var(--danger); }
+  .type-compare .compare-card--after .compare-label { color: var(--success); }
+  .type-compare .compare-card h4 { font-size: 1rem; color: var(--text-strong); margin-bottom: 6px; font-weight: 700; }
+  .type-compare .compare-card p { font-size: 0.88rem; color: var(--text-muted); line-height: 1.55; }
+  .type-compare .compare-arrow {
+    display: flex; align-items: center; justify-content: center;
+    color: var(--accent); font-size: 1.3rem; font-weight: 800;
+  }
+
+  /* ── Matrix ── */
+  .type-matrix table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+  .type-matrix th {
+    text-align: left; padding: 10px 14px;
+    background: var(--bg-deep); color: var(--text-strong);
+    font-weight: 700;
+    border-bottom: 2px solid var(--border);
+    font-size: 0.82rem;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .type-matrix td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text); vertical-align: top;
+  }
+  .type-matrix tr:nth-child(even) td { background: var(--table-stripe); }
+
+  [id] { scroll-margin-top: 20px; }
+
+  /* ── ライブラリロード失敗時のバナー ── */
+  .lib-error-banner {
+    position: fixed;
+    top: 0; left: 260px; right: 0;
+    padding: 12px 24px;
+    background: var(--danger-light);
+    border-bottom: 2px solid var(--danger);
+    color: var(--danger);
+    font-size: 0.9rem;
+    font-weight: 600;
+    z-index: 200;
+  }
+
+  @media print {
+    .sidebar, .theme-toggle { display: none; }
+    .main { margin-left: 0; }
+    body { background: #fff; color: #000; font-size: 11pt; }
+    @page { margin: 20mm; }
+    .section, .overview, .preamble-section { break-inside: avoid; page-break-inside: avoid; }
+    .type-chart, .type-gauge, .type-flow, .type-sequence,
+    .type-mindmap, .type-compare, .type-matrix { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<!--
+  ═══════════════════════════════════════════════════════════
+  型選択フローチャート(Claude 用)
+  ─────────────────────────────────────────
+  数値・KPI・トレンドを見せたい   ────── type-chart (Chart.js)
+  進捗・達成率を計器で見せたい     ────── type-gauge (Chart.js)
+  手順・分岐・状態遷移            ────── type-flow (Mermaid)
+  A↔B のやりとり(API・人)        ────── type-sequence (Mermaid)
+  概念を放射状に整理              ────── type-mindmap (Mermaid)
+  前後/案比較(絵にできない逃げ)  ────── type-compare (CSS)
+  表・2x2 象限                   ────── type-matrix (CSS)
+
+  原則: 絵型(chart/gauge/flow/sequence/mindmap)優先。
+  構造型(compare/matrix)は最小限。
+  ═══════════════════════════════════════════════════════════
+-->
+
+<nav class="sidebar" aria-label="目次">
+  <div class="sidebar-header">
+    <div class="sidebar-title">サンプル資料</div>
+    <div class="sidebar-progress">
+      <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width: 0%"></div></div>
+      <span class="progress-text" id="progressText" aria-live="polite">0 / 0</span>
+    </div>
+  </div>
+  <ul class="toc-list" id="tocList"></ul>
+</nav>
+
+<div class="main">
+
+  <header id="header">
+    <div class="theme-toggle">
+      <button type="button" onclick="setTheme('light')" id="btnLight" class="active">Light</button>
+      <button type="button" onclick="setTheme('dark')" id="btnDark">Dark</button>
+    </div>
+    <div class="doc-type">Proposal</div>
+    <h1>サンプル資料: 新機能の導入提案</h1>
+    <div class="doc-meta">
+      <span>2026-04-23</span>
+      <span aria-hidden="true">|</span>
+      <span>チーム A / 田中</span>
+    </div>
+  </header>
+
+  <div class="preamble" id="preamble">
+    <div class="preamble-section preamble-section--goal">
+      <div class="preamble-body">
+        <div class="preamble-label">ゴール</div>
+        <div class="preamble-definition">ユーザー離脱率を来期までに 20% 改善し、継続率を底上げする。</div>
+      </div>
+    </div>
+    <div class="preamble-section preamble-section--background">
+      <div class="preamble-body">
+        <div class="preamble-label">背景</div>
+        <ul class="preamble-list">
+          <li>直近 3 ヶ月で離脱率が 12 → 18% に悪化している</li>
+          <li>競合 A 社が類似機能をリリースし、比較で見劣り</li>
+          <li>既存改善施策は頭打ち。抜本的な変更が必要</li>
+        </ul>
+      </div>
+    </div>
+    <div class="preamble-section preamble-section--dod">
+      <div class="preamble-body">
+        <div class="preamble-label">DoD(Definition of Done)</div>
+        <ol class="preamble-dod-list">
+          <li>提案スコープ・対象ユーザー・期待効果が全員に共有済み</li>
+          <li>実装方針と工数見積もりが決裁ラインで合意済み</li>
+          <li>Go/No-Go の判断材料が揃っている</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Overview(俯瞰図): Mermaid mindmap ── -->
+  <div class="overview" id="overview">
+    <div class="overview-header">
+      <div class="overview-label">俯瞰図</div>
+      <div class="overview-subtitle">ゴールを達成するために必要な要素の全体像</div>
+    </div>
+    <div class="overview-body">
+      <pre class="mermaid">
+mindmap
+  root((離脱率 -20%))
+    ユーザー理解
+      行動データ分析
+      定性インタビュー
+    体験改善
+      初回オンボーディング
+      通知設計
+    継続インセンティブ
+      リワード
+      コミュニティ
+      </pre>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ══════════════ TYPE: chart ══════════════ -->
+    <section class="section type-chart" id="section-chart">
+      <div class="section-header">
+        <span class="section-number"></span>
+        <h2>月次の離脱率推移</h2>
+      </div>
+      <div class="fig-frame">
+        <div class="chart-wrap"><canvas id="chart-retention" role="img" aria-label="月次離脱率の推移線グラフ"></canvas></div>
+      </div>
+      <div class="fig-caption">直近 6 ヶ月の離脱率(%)</div>
+    </section>
+
+    <!-- ══════════════ TYPE: gauge ══════════════ -->
+    <section class="section type-gauge" id="section-gauge">
+      <div class="section-header">
+        <span class="section-number"></span>
+        <h2>主要 KPI の達成状況</h2>
+      </div>
+      <div class="gauge-grid">
+        <div class="gauge-card">
+          <div class="gauge-canvas"><canvas id="gauge-1" role="img" aria-label="継続率 72%"></canvas></div>
+          <div class="gauge-label">継続率</div>
+        </div>
+        <div class="gauge-card">
+          <div class="gauge-canvas"><canvas id="gauge-2" role="img" aria-label="NPS 改善 45%"></canvas></div>
+          <div class="gauge-label">NPS 改善</div>
+        </div>
+        <div class="gauge-card">
+          <div class="gauge-canvas"><canvas id="gauge-3" role="img" aria-label="CVR 91%"></canvas></div>
+          <div class="gauge-label">CVR</div>
+        </div>
+      </div>
+      <div class="fig-caption">目標に対する達成度(%)</div>
+    </section>
+
+    <!-- ══════════════ TYPE: flow ══════════════ -->
+    <section class="section type-flow" id="section-flow">
+      <div class="section-header">
+        <span class="section-number"></span>
+        <h2>導入判断フロー</h2>
+      </div>
+      <div class="fig-frame">
+        <pre class="mermaid">
+flowchart LR
+  A[提案受領] --> B{予算枠内?}
+  B -- Yes --> C[詳細設計]
+  B -- No --> D[スコープ再検討]
+  D --> B
+  C --> E[実装・検証]
+  E --> F{KPI 達成?}
+  F -- Yes --> G[展開]
+  F -- No --> H[撤退]
+        </pre>
+      </div>
+      <div class="fig-caption">Go / No-Go の分岐</div>
+    </section>
+
+    <!-- ══════════════ TYPE: sequence ══════════════ -->
+    <section class="section type-sequence" id="section-sequence">
+      <div class="section-header">
+        <span class="section-number"></span>
+        <h2>通知送信のシーケンス</h2>
+      </div>
+      <div class="fig-frame">
+        <pre class="mermaid">
+sequenceDiagram
+  participant U as ユーザー
+  participant App as アプリ
+  participant API as API Server
+  participant Queue as Notification Queue
+  U->>App: 設定変更
+  App->>API: PATCH /preferences
+  API->>Queue: enqueue notification
+  Queue-->>U: push 通知
+  U->>App: 通知タップ
+        </pre>
+      </div>
+      <div class="fig-caption">Preference 変更から push 配信まで</div>
+    </section>
+
+<!-- ══════════════ TYPE: compare ══════════════ -->
+    <section class="section type-compare" id="section-compare">
+      <div class="section-header">
+        <span class="section-number"></span>
+        <h2>現行運用と新案の比較</h2>
+      </div>
+      <div class="compare-grid">
+        <div class="compare-card compare-card--before">
+          <div class="compare-label">Before</div>
+          <h4>全ユーザーに一律通知</h4>
+          <p>行動に関わらず同じタイミング・同じ文面で配信。開封率は 8% 前後。</p>
+        </div>
+        <div class="compare-arrow">→</div>
+        <div class="compare-card compare-card--after">
+          <div class="compare-label">After</div>
+          <h4>行動セグメント別に出し分け</h4>
+          <p>直近 7 日のログイン有無と CV 近接度でセグメント化し、文面・時間帯を最適化。</p>
+        </div>
+      </div>
+      <div class="fig-caption">通知配信方針の差分</div>
+    </section>
+
+    <!-- ══════════════ TYPE: matrix ══════════════ -->
+    <section class="section type-matrix" id="section-matrix">
+      <div class="section-header">
+        <span class="section-number"></span>
+        <h2>施策の優先度マトリクス</h2>
+      </div>
+      <table>
+        <thead>
+          <tr><th>施策</th><th>期待効果</th><th>工数</th><th>優先度</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>通知セグメント化</td><td>離脱 -5%</td><td>S</td><td>高</td></tr>
+          <tr><td>オンボーディング改修</td><td>継続率 +3%</td><td>M</td><td>高</td></tr>
+          <tr><td>リワードプログラム</td><td>継続率 +2%</td><td>L</td><td>中</td></tr>
+          <tr><td>コミュニティ機能</td><td>不確定</td><td>XL</td><td>低</td></tr>
+        </tbody>
+      </table>
+      <div class="fig-caption">効果 × 工数での優先度判定</div>
+    </section>
+
+  </div>
+</div>
+
+<!-- ═══ Mermaid 初期化(手動 run 方式で確実に描画)═══ -->
+<script>
+  // Mermaid を手動実行(theme は初回 light 固定、切替時に再実行)
+  function runMermaid() {
+    if (!window.mermaid) return;
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    // 既に処理済みの要素を戻す
+    document.querySelectorAll('pre.mermaid[data-processed="true"]').forEach(el => {
+      if (el.dataset.source) {
+        el.textContent = el.dataset.source;
+        el.removeAttribute('data-processed');
+      }
+    });
+    // 初回だけソースを data-source に保存
+    document.querySelectorAll('pre.mermaid').forEach(el => {
+      if (!el.dataset.source) el.dataset.source = el.textContent;
+    });
+    // シックなカラーパレット(themeVariables で全図に適用)
+    const paletteLight = ['#1e3a8a', '#5b21b6', '#065f46', '#7c2d12', '#9f1239', '#115e59'];
+    const paletteDark  = ['#60a5fa', '#a78bfa', '#34d399', '#fbbf24', '#f87171', '#2dd4bf'];
+    const palette = isDark ? paletteDark : paletteLight;
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'base',
+      securityLevel: 'strict',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      themeVariables: {
+        background: isDark ? '#161b22' : '#ffffff',
+        primaryColor: palette[0],
+        primaryTextColor: '#ffffff',
+        primaryBorderColor: palette[0],
+        secondaryColor: palette[1],
+        tertiaryColor: palette[2],
+        lineColor: isDark ? '#6e7681' : '#64748b',
+        textColor: isDark ? '#c9d1d9' : '#1f2328',
+        mainBkg: palette[0],
+        nodeBorder: palette[0],
+        clusterBkg: isDark ? '#0d1117' : '#f6f8fa',
+        cScale0: palette[0], cScale1: palette[1], cScale2: palette[2],
+        cScale3: palette[3], cScale4: palette[4], cScale5: palette[5],
+        cScaleLabel0: '#ffffff', cScaleLabel1: '#ffffff', cScaleLabel2: '#ffffff',
+        cScaleLabel3: '#ffffff', cScaleLabel4: '#ffffff', cScaleLabel5: '#ffffff',
+        actorBkg: palette[0], actorBorder: palette[0], actorTextColor: '#ffffff',
+        signalColor: isDark ? '#c9d1d9' : '#1f2328',
+        git0: palette[0], git1: palette[1], git2: palette[2],
+        git3: palette[3], git4: palette[4], git5: palette[5]
+      }
+    });
+    mermaid.run({ querySelector: 'pre.mermaid' });
+  }
+</script>
+
+<!-- ═══ Chart.js インスタンス(各チャートごと)═══ -->
+<script>
+  function buildCharts() {
+    if (!window.Chart) return;
+    // 既存インスタンスを破棄
+    if (window.__chartInstances) window.__chartInstances.forEach(c => c.destroy?.());
+    window.__chartInstances = [];
+
+    const cs = getComputedStyle(document.documentElement);
+    Chart.defaults.color = cs.getPropertyValue('--text-muted').trim();
+    Chart.defaults.borderColor = cs.getPropertyValue('--border').trim();
+    const trackColor = cs.getPropertyValue('--progress-bg').trim() || 'rgba(127,127,127,0.15)';
+
+    // ── Chart: 月次離脱率 ──
+    const el1 = document.getElementById('chart-retention');
+    if (el1) window.__chartInstances.push(new Chart(el1, {
+      type: 'line',
+      data: {
+        labels: ['11月', '12月', '1月', '2月', '3月', '4月'],
+        datasets: [{
+          label: '離脱率 (%)',
+          data: [12, 13, 14, 16, 17, 18],
+          borderColor: '#dc2626',
+          backgroundColor: 'rgba(220, 38, 38, 0.12)',
+          fill: true, tension: 0.3, borderWidth: 2, pointRadius: 4
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, max: 25 } }
+      }
+    }));
+
+    // ── Gauge: 半円ドーナツ ──
+    const mkGauge = (id, value, color) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      window.__chartInstances.push(new Chart(el, {
+        type: 'doughnut',
+        data: {
+          datasets: [{
+            data: [value, 100 - value],
+            backgroundColor: [color, trackColor],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          cutout: '72%',
+          rotation: -90, circumference: 180,
+          plugins: { legend: { display: false }, tooltip: { enabled: false } }
+        },
+        plugins: [{
+          id: 'gaugeText' + id,
+          afterDraw: (chart) => {
+            const { ctx, width, height } = chart;
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = '700 1.5rem -apple-system,sans-serif';
+            ctx.fillStyle = color;
+            ctx.fillText(value + '%', width / 2, height * 0.78);
+            ctx.restore();
+          }
+        }]
+      }));
+    };
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const gaugeColors = isDark
+      ? ['#60a5fa', '#fbbf24', '#34d399']
+      : ['#1e3a8a', '#b45309', '#065f46'];
+    mkGauge('gauge-1', 72, gaugeColors[0]);
+    mkGauge('gauge-2', 45, gaugeColors[1]);
+    mkGauge('gauge-3', 91, gaugeColors[2]);
+  }
+</script>
+
+<!-- ═══ TOC / Scroll spy ═══ -->
+<script>
+  let allTargets = [];
+  let allLinks = [];
+  let isClickScrolling = false;
+
+  function buildTOC() {
+    const header = document.getElementById('header');
+    const preamble = document.getElementById('preamble');
+    const overview = document.getElementById('overview');
+    const sections = document.querySelectorAll('.section[id]');
+    const tocList = document.getElementById('tocList');
+    const items = [];
+
+    if (header) items.push({ el: header, title: 'タイトル', num: '—' });
+    if (preamble) items.push({ el: preamble, title: 'ゴール / 背景 / DoD', num: '—' });
+    if (overview) items.push({ el: overview, title: '俯瞰図', num: '◎' });
+
+    let n = 1;
+    sections.forEach(sec => {
+      const title = sec.querySelector('h2')?.textContent || `Section ${n}`;
+      const numEl = sec.querySelector('.section-number');
+      if (numEl) numEl.textContent = n;
+      items.push({ el: sec, title, num: String(n) });
+      n++;
+    });
+
+    const total = items.length;
+    items.forEach((item, i) => {
+      const li = document.createElement('li');
+      li.className = 'toc-item';
+      const link = document.createElement('a');
+      link.className = 'toc-link';
+      link.href = `#${item.el.id}`;
+      const numClass = item.num === '—' ? 'toc-number toc-number--dash' : 'toc-number';
+      link.innerHTML = `<span class="${numClass}">${item.num}</span><span>${item.title}</span>`;
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        isClickScrolling = true;
+        item.el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        updateActive(i, total);
+        setTimeout(() => { isClickScrolling = false; }, 1000);
+      });
+      li.appendChild(link);
+      tocList.appendChild(li);
+      allTargets.push(item.el);
+    });
+
+    allLinks = Array.from(document.querySelectorAll('.toc-link'));
+    updateActive(0, total);
+  }
+
+  function updateActive(idx, total) {
+    allLinks.forEach((l, i) => l.classList.toggle('active', i === idx));
+    const pct = Math.round(((idx + 1) / total) * 100);
+    document.getElementById('progressFill').style.width = pct + '%';
+    const remaining = total - idx - 1;
+    document.getElementById('progressText').textContent =
+      remaining === 0 ? '最後' : `残り ${remaining}`;
+  }
+
+  function setupScrollSpy() {
+    const total = allTargets.length;
+    const observer = new IntersectionObserver((entries) => {
+      if (isClickScrolling) return;
+      const visible = entries.filter(e => e.isIntersecting);
+      if (!visible.length) return;
+      const top = visible.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+      const idx = allTargets.findIndex(t => t.id === top.target.id);
+      if (idx >= 0) updateActive(idx, total);
+    }, { rootMargin: '-5% 0px -70% 0px' });
+    allTargets.forEach(el => observer.observe(el));
+  }
+</script>
+
+<!-- ═══ Theme + 初期化オーケストレーション ═══ -->
+<script>
+  // file:// / プライベートモードでも落ちない localStorage ラッパ
+  function safeGet(key) {
+    try { return localStorage.getItem(key); } catch (e) { return null; }
+  }
+  function safeSet(key, val) {
+    try { localStorage.setItem(key, val); } catch (e) { /* ignore */ }
+  }
+
+  function setTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    document.getElementById('btnLight').classList.toggle('active', t === 'light');
+    document.getElementById('btnDark').classList.toggle('active', t === 'dark');
+    safeSet('doc-template-theme', t);
+    runMermaid();
+    buildCharts();
+  }
+
+  // ライブラリロード待ち(最長 6 秒、未到着ならバナーを表示)
+  function whenReadyOrFail(cb, timeoutMs) {
+    const deadline = Date.now() + (timeoutMs || 6000);
+    (function poll() {
+      if (window.mermaid && window.Chart) return cb();
+      if (Date.now() >= deadline) return showLibError();
+      setTimeout(poll, 50);
+    })();
+  }
+  function showLibError() {
+    if (document.querySelector('.lib-error-banner')) return; // 二重表示防止
+    const missing = [];
+    if (!window.mermaid) missing.push('Mermaid');
+    if (!window.Chart) missing.push('Chart.js');
+    const banner = document.createElement('div');
+    banner.className = 'lib-error-banner';
+    banner.textContent = `⚠ ${missing.join(' / ')} を CDN から読み込めませんでした。` +
+      ' Brave Shields / 広告ブロッカー / ネットワークを確認してください(cdn.jsdelivr.net)。';
+    document.body.appendChild(banner);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    buildTOC();
+    setupScrollSpy();
+    const saved = safeGet('doc-template-theme') || 'light';
+    document.documentElement.setAttribute('data-theme', saved);
+    document.getElementById('btnLight').classList.toggle('active', saved === 'light');
+    document.getElementById('btnDark').classList.toggle('active', saved === 'dark');
+    whenReadyOrFail(() => {
+      runMermaid();
+      buildCharts();
+    });
+  });
+</script>
+</body>
+</html>

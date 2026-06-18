@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>チャート・図カタログ — 番号で選択</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #f6f8fa;
+    --card: #ffffff;
+    --border: #d0d7de;
+    --text: #1f2328;
+    --muted: #656d76;
+    --faint: #8b949e;
+    --accent: #1e3a8a;
+    --accent2: #5b21b6;
+    --good: #065f46;
+    --warn: #b45309;
+    --danger: #9f1239;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  header {
+    padding: 32px 48px 20px;
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+  }
+  header h1 {
+    font-size: 1.85rem;
+    font-weight: 800;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  header p { color: var(--muted); font-size: 0.95rem; }
+  header .meta {
+    display: flex; gap: 18px;
+    margin-top: 10px;
+    font-size: 0.82rem;
+    color: var(--faint);
+  }
+  main { padding: 32px 48px; max-width: 1600px; margin: 0 auto; }
+
+  .cat-section {
+    margin-bottom: 44px;
+  }
+  .cat-section h2 {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--text);
+    padding: 6px 12px;
+    background: var(--card);
+    border-left: 4px solid var(--accent);
+    border-radius: 2px;
+    margin-bottom: 18px;
+  }
+  .cat-section .cat-desc {
+    font-size: 0.88rem;
+    color: var(--muted);
+    margin: -10px 0 14px 16px;
+  }
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 14px;
+  }
+  .cat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px 16px;
+    position: relative;
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .cat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+  .num {
+    position: absolute;
+    top: -10px; right: 12px;
+    background: var(--accent); color: #fff;
+    font-size: 0.72rem; font-weight: 800;
+    padding: 4px 10px; border-radius: 12px;
+    letter-spacing: 0.05em;
+  }
+  .thumb {
+    height: 72px;
+    display: flex; align-items: center; justify-content: center;
+    background: #f9fafb;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    border: 1px solid #eef0f3;
+  }
+  .thumb svg { width: 100%; height: 100%; }
+  .cat-card h3 {
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .cat-card p {
+    font-size: 0.82rem;
+    color: var(--muted);
+    line-height: 1.5;
+    min-height: 38px;
+  }
+  .impl {
+    display: inline-block;
+    margin-top: 6px;
+    font-size: 0.7rem; font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 8px;
+    letter-spacing: 0.04em;
+  }
+  .impl--chart { background: #eff6ff; color: #1e40af; }
+  .impl--mermaid { background: #f5f0ff; color: #5b21b6; }
+  .impl--css { background: #f0fdf4; color: #065f46; }
+  .impl--svg { background: #fff7ed; color: #9a3412; }
+  .impl--plugin { background: #fef2f2; color: #9f1239; }
+  .impl--custom { background: #1f2328; color: #f6f8fa; }
+
+  /* thumb SVG shared styles */
+  .t-bar rect { fill: var(--accent); }
+  .t-bar2 rect { fill: var(--accent2); }
+  .t-line { fill: none; stroke: var(--accent); stroke-width: 2; }
+  .t-area-fill { fill: rgba(30, 58, 138, 0.22); }
+  .t-axis { stroke: #cbd5e1; stroke-width: 1; }
+  .t-node { fill: #eff6ff; stroke: var(--accent); stroke-width: 1.2; }
+  .t-node-text { fill: var(--accent); font-size: 6px; font-family: sans-serif; font-weight: 700; }
+  .t-edge { stroke: #94a3b8; stroke-width: 1; fill: none; }
+  .t-ring { fill: none; stroke-width: 8; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>チャート・図カタログ</h1>
+  <p>採用候補を番号で選択してください。各カードに実装手段(Chart.js / Mermaid / CSS / SVG / Plugin / 独自)を併記。</p>
+  <div class="meta">
+    <span>全 42 種</span>
+    <span>カテゴリ 6</span>
+    <span>Chart.js 標準 / Mermaid 標準 / Plugin / 独自実装を含む</span>
+  </div>
+</header>
+
+<main>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     A. 量・数値の可視化
+     ══════════════════════════════════════════════════════════════════ -->
+<section class="cat-section">
+  <h2>A. 量・数値の可視化</h2>
+  <div class="cat-desc">数値・比率・トレンドを形で伝える</div>
+  <div class="card-grid">
+
+    <article class="cat-card">
+      <div class="num">01</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <g class="t-bar"><rect x="6" y="18" width="8" height="18"/><rect x="20" y="10" width="8" height="26"/><rect x="34" y="22" width="8" height="14"/><rect x="48" y="6" width="8" height="30"/></g>
+        <line class="t-axis" x1="2" y1="36" x2="58" y2="36"/>
+      </svg></div>
+      <h3>垂直棒グラフ</h3>
+      <p>数量比較・ランキング。最も汎用性が高い</p>
+      <span class="impl impl--chart">Chart.js</span>
+    </article>
+
+    <article class="cat-card">
+      <div class="num">02</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <g class="t-bar"><rect x="4" y="6" width="30" height="5"/><rect x="4" y="15" width="48" height="5"/><rect x="4" y="24" width="22" height="5"/><rect x="4" y="33" width="38" height="5"/></g>
+        <line class="t-axis" x1="4" y1="3" x2="4" y2="40"/>
+      </svg></div>
+      <h3>水平棒グラフ</h3>
+      <p>ラベルが長い時・項目数多い時に読みやすい</p>
+      <span class="impl impl--chart">Chart.js</span>
+    </article>
+
+    <article class="cat-card">
+      <div class="num">03</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <g><rect x="6" y="20" width="10" height="16" fill="#1e3a8a"/><rect x="6" y="10" width="10" height="10" fill="#5b21b6"/></g>
+        <g><rect x="22" y="14" width="10" height="22" fill="#1e3a8a"/><rect x="22" y="6" width="10" height="8" fill="#5b21b6"/></g>
+        <g><rect x="38" y="24" width="10" height="12" fill="#1e3a8a"/><rect x="38" y="14" width="10" height="10" fill="#5b21b6"/></g>
+      </svg></div>
+      <h3>積み上げ棒グラフ</h3>
+      <p>総量 + 構成比を同時に見せる</p>
+      <span class="impl impl--chart">Chart.js</span>
+    </article>
+
+    <article class="cat-card">
+      <div class="num">04</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <polyline class="t-line" points="4,30 14,22 24,26 34,14 44,18 54,8"/>
+        <line class="t-axis" x1="2" y1="36" x2="58" y2="36"/>
+      </svg></div>
+      <h3>折れ線グラフ</h3>
+      <p>時系列のトレンド・増減を追う</p>
+      <span class="impl impl--chart">Chart.js</span>
+    </article>
+
+    <article class="cat-card">
+      <div class="num">05</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <polygon class="t-area-fill" points="4,30 14,22 24,26 34,14 44,18 54,8 54,36 4,36"/>
+        <polyline class="t-line" points="4,30 14,22 24,26 34,14 44,18 54,8"/>
+      </svg></div>
+      <h3>エリアチャート</h3>
+      <p>累積量・塗りで量感を強調</p>
+      <span class="impl impl--chart">Chart.js</span>
+    </article>
+
+    <article class="cat-card">
+      <div class="num">06</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <circle cx="30" cy="20" r="15" fill="#1e3a8a"/>
+        <path d="M 30 20 L 45 20 A 15 15 0 0 0 38 7 Z" fill="#5b21b6"/>
+        <path d="M 30 20 L 38 7 A 15 15 0 0 0 22 10 Z" fill="#065f46"/>
+      </svg></div>
+      <h3>円グラフ</h3>
+      <p>構成比(3〜5 項目以内推奨)</p>
+      <span class="impl impl--chart">Chart.js</span>
+    </article>
+
+    <article class="cat-card">
+      <div class="num">07</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <circle class="t-ring" cx="30" cy="20" r="14" stroke="#e5e7eb"/>
+        <circle class="t-ring" cx="30" cy="20" r="14" stroke="#1e3a8a" stroke-dasharray="55 88" transform="rotate(-90 30 20)"/>
+      </svg></div>
+      <h3>ドーナツ</h3>
+      <p>構成比 + 中央に主指標を置ける</p>
+      <span class="impl impl--chart">Chart.js</span>
+    </article>
+
+    <article class="cat-card">
+      <div class="num">08</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <path d="M 30 20 L 30 7 A 13 13 0 0 1 43 20 Z" fill="#1e3a8a"/>
+        <path d="M 30 20 L 43 20 A 13 13 0 0 1 30 33 Z" fill="#5b21b6"/>
+        <path d="M 30 20 L 30 33 A 13 13 0 0 1 17 20 Z" fill="#065f46"/>
+        <path d="M 30 20 L 17 20 A 13 13 0 0 1 30 7 Z" fill="#b45309"/>
+      </svg></div>
+      <h3>極座標(polar area)</h3>
+      <p>角度均等 + 半径で量。4〜6 軸向き</p>
+      <span class="impl impl--chart">Chart.js</span>
+    </article>
+
+    <article class="cat-card">
+      <div class="num">09</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <polygon points="30,6 46,15 42,32 18,32 14,15" fill="none" stroke="#cbd5e1" stroke-width="1"/>
+        <polygon points="30,6 46,15 42,32 18,32 14,15" fill="rgba(30,58,138,0.3)" transform="scale(0.6) translate(20,13)"/>
+      </svg></div>
+      <h3>レーダー</h3>
+      <p>多軸評価。3〜7 軸で能力/スコア比較</p>
+      <span class="impl impl--chart">Chart.js</span>
+    </article>
+
+    <article class="cat-card">
+      <div class="num">10</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <circle cx="12" cy="30" r="2" fill="#1e3a8a"/>
+        <circle cx="20" cy="24" r="2" fill="#1e3a8a"/>
+        <circle cx="26" cy="28" r="2" fill="#1e3a8a"/>
+        <circle cx="34" cy="18" r="2" fill="#1e3a8a"/>
+        <circle cx="40" cy="14" r="2" fill="#1e3a8a"/>
+        <circle cx="48" cy="10" r="2" fill="#1e3a8a"/>
+        <line class="t-axis" x1="2" y1="36" x2="58" y2="36"/>
+      </svg></div>
+      <h3>散布図</h3>
+      <p>2 変数の相関・分布</p>
+      <span class="impl impl--chart">Chart.js</span>
+    </article>
+
+    <article class="cat-card">
+      <div class="num">11</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <circle cx="14" cy="28" r="3" fill="rgba(30,58,138,0.5)"/>
+        <circle cx="26" cy="18" r="6" fill="rgba(91,33,182,0.5)"/>
+        <circle cx="40" cy="24" r="4" fill="rgba(6,94,70,0.5)"/>
+        <circle cx="50" cy="12" r="5" fill="rgba(180,83,9,0.5)"/>
+      </svg></div>
+      <h3>バブルチャート</h3>
+      <p>3 変数(x, y, サイズ)を同時表示</p>
+      <span class="impl impl--chart">Chart.js</span>
+    </article>
+
+    <article class="cat-card">
+      <div class="num">12</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <g class="t-bar"><rect x="6" y="18" width="7" height="18"/><rect x="20" y="10" width="7" height="26"/><rect x="34" y="22" width="7" height="14"/><rect x="48" y="14" width="7" height="22"/></g>
+        <polyline class="t-line" points="9,8 23,16 37,6 51,20" stroke="#b45309"/>
+      </svg></div>
+      <h3>複合(棒+線)</h3>
+      <p>量(棒) + トレンド(線)を 1 枚で</p>
+      <span class="impl impl--chart">Chart.js</span>
+    </article>
+
+    <article class="cat-card">
+      <div class="num">13</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <path d="M 10 32 A 20 20 0 0 1 50 32" fill="none" stroke="#e5e7eb" stroke-width="5"/>
+        <path d="M 10 32 A 20 20 0 0 1 42 16" fill="none" stroke="#1e3a8a" stroke-width="5"/>
+        <text x="30" y="32" text-anchor="middle" font-size="8" font-weight="700" fill="#1e3a8a">72%</text>
+      </svg></div>
+      <h3>ゲージ(半円)</h3>
+      <p>進捗・達成度・計器表示</p>
+      <span class="impl impl--chart">Chart.js</span>
+    </article>
+
+    <article class="cat-card">
+      <div class="num">14</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <polyline class="t-line" points="4,22 12,18 20,24 28,12 36,16 44,8 52,14" stroke-width="1.5"/>
+      </svg></div>
+      <h3>スパークライン</h3>
+      <p>テキスト内埋め込みの小型トレンド</p>
+      <span class="impl impl--chart">Chart.js</span>
+    </article>
+
+    <article class="cat-card">
+      <div class="num">15</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <g>
+          <rect x="4" y="6" width="10" height="10" fill="#dbeafe"/><rect x="14" y="6" width="10" height="10" fill="#93c5fd"/><rect x="24" y="6" width="10" height="10" fill="#3b82f6"/><rect x="34" y="6" width="10" height="10" fill="#1e40af"/><rect x="44" y="6" width="10" height="10" fill="#dbeafe"/>
+          <rect x="4" y="16" width="10" height="10" fill="#93c5fd"/><rect x="14" y="16" width="10" height="10" fill="#1e40af"/><rect x="24" y="16" width="10" height="10" fill="#1e3a8a"/><rect x="34" y="16" width="10" height="10" fill="#3b82f6"/><rect x="44" y="16" width="10" height="10" fill="#93c5fd"/>
+          <rect x="4" y="26" width="10" height="10" fill="#dbeafe"/><rect x="14" y="26" width="10" height="10" fill="#3b82f6"/><rect x="24" y="26" width="10" height="10" fill="#93c5fd"/><rect x="34" y="26" width="10" height="10" fill="#dbeafe"/><rect x="44" y="26" width="10" height="10" fill="#93c5fd"/>
+        </g>
+      </svg></div>
+      <h3>ヒートマップ</h3>
+      <p>2 次元の密度・頻度を色で表現</p>
+      <span class="impl impl--plugin">Chart.js Plugin / CSS</span>
+    </article>
+
+    <article class="cat-card">
+      <div class="num">16</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <polygon points="6,6 54,6 46,16 14,16" fill="#1e3a8a"/>
+        <polygon points="14,18 46,18 40,28 20,28" fill="#5b21b6"/>
+        <polygon points="20,30 40,30 34,38 26,38" fill="#065f46"/>
+      </svg></div>
+      <h3>ファネル</h3>
+      <p>ステップ間の減衰・CV率</p>
+      <span class="impl impl--plugin">Chart.js Plugin</span>
+    </article>
+
+    <article class="cat-card">
+      <div class="num">17</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <rect x="2" y="2" width="34" height="22" fill="#1e3a8a"/>
+        <rect x="38" y="2" width="20" height="14" fill="#5b21b6"/>
+        <rect x="38" y="18" width="20" height="8" fill="#065f46"/>
+        <rect x="2" y="26" width="20" height="12" fill="#b45309"/>
+        <rect x="24" y="26" width="14" height="12" fill="#9f1239"/>
+        <rect x="40" y="28" width="18" height="10" fill="#0f766e"/>
+      </svg></div>
+      <h3>ツリーマップ</h3>
+      <p>階層的な量を面積で表現</p>
+      <span class="impl impl--plugin">Chart.js Plugin</span>
+    </article>
+
+    <article class="cat-card">
+      <div class="num">18</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <rect x="4" y="22" width="8" height="14" fill="#1e3a8a"/>
+        <rect x="16" y="14" width="8" height="8" fill="#065f46"/>
+        <rect x="28" y="18" width="8" height="4" fill="#9f1239"/>
+        <rect x="40" y="10" width="8" height="8" fill="#065f46"/>
+        <rect x="52" y="6" width="6" height="30" fill="#1e3a8a"/>
+        <line stroke="#94a3b8" stroke-dasharray="2 2" x1="12" y1="22" x2="16" y2="22"/>
+        <line stroke="#94a3b8" stroke-dasharray="2 2" x1="24" y1="14" x2="28" y2="14"/>
+      </svg></div>
+      <h3>ウォーターフォール</h3>
+      <p>増減の累積(収支の推移等)</p>
+      <span class="impl impl--plugin">Chart.js Plugin</span>
+    </article>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     B. フロー・手順・状態
+     ══════════════════════════════════════════════════════════════════ -->
+<section class="cat-section">
+  <h2>B. フロー・手順・状態</h2>
+  <div class="cat-desc">動き・進行・分岐を描く</div>
+  <div class="card-grid">
+
+    <article class="cat-card">
+      <div class="num">19</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <rect class="t-node" x="4" y="16" width="12" height="8" rx="1"/>
+        <rect class="t-node" x="24" y="16" width="12" height="8" rx="1" transform="rotate(45 30 20)"/>
+        <rect class="t-node" x="44" y="6" width="12" height="8" rx="1"/>
+        <rect class="t-node" x="44" y="26" width="12" height="8" rx="1"/>
+        <path class="t-edge" d="M 16 20 L 24 20 M 36 20 L 44 10 M 36 20 L 44 30"/>
+      </svg></div>
+      <h3>フローチャート</h3>
+      <p>手順・分岐・判定を最も素直に描く定番</p>
+      <span class="impl impl--mermaid">Mermaid</span>
+    </article>
+
+    <article class="cat-card">
+      <div class="num">20</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <ellipse cx="12" cy="20" rx="8" ry="6" fill="#eff6ff" stroke="#1e3a8a"/>
+        <ellipse cx="32" cy="20" rx="8" ry="6" fill="#eff6ff" stroke="#1e3a8a"/>
+        <ellipse cx="52" cy="20" rx="8" ry="6" fill="#f0fdf4" stroke="#065f46"/>
+        <path class="t-edge" d="M 20 20 L 24 20 M 40 20 L 44 20" marker-end="url(#arr-c)"/>
+        <defs><marker id="arr-c" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#94a3b8"/></marker></defs>
+      </svg></div>
+      <h3>状態遷移図</h3>
+      <p>ステータスの移行・ライフサイクル</p>
+      <span class="impl impl--mermaid">Mermaid</span>
+    </article>
+
+    <article class="cat-card">
+      <div class="num">21</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <polyline class="t-line" points="4,30 18,20 32,14 46,24 54,8" stroke="#5b21b6"/>
+        <circle cx="4" cy="30" r="2" fill="#5b21b6"/>
+        <circle cx="18" cy="20" r="2" fill="#5b21b6"/>
+        <circle cx="32" cy="14" r="2" fill="#5b21b6"/>
+        <circle cx="46" cy="24" r="2" fill="#5b21b6"/>
+        <circle cx="54" cy="8" r="2" fill="#5b21b6"/>
+      </svg></div>
+      <h3>ユーザー旅路(journey)</h3>
+      <p>体験の感情スコア推移(UX 設計)</p>
+      <span class="impl impl--mermaid">Mermaid</span>
+    </article>
+
+    <article class="cat-card">
+      <div class="num">22</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <rect x="4" y="6" width="18" height="5" fill="#1e3a8a"/>
+        <rect x="16" y="15" width="22" height="5" fill="#5b21b6"/>
+        <rect x="30" y="24" width="18" height="5" fill="#065f46"/>
+        <rect x="40" y="33" width="14" height="5" fill="#b45309"/>
+      </svg></div>
+      <h3>ガントチャート</h3>
+      <p>プロジェクトの期間と依存関係</p>
+      <span class="impl impl--mermaid">Mermaid</span>
+    </article>
+
+    <article class="cat-card">
+      <div class="num">23</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <rect x="2" y="4" width="18" height="32" fill="#eff6ff" stroke="#cbd5e1"/>
+        <rect x="21" y="4" width="18" height="32" fill="#f5f0ff" stroke="#cbd5e1"/>
+        <rect x="40" y="4" width="18" height="32" fill="#f0fdf4" stroke="#cbd5e1"/>
+        <rect x="4" y="8" width="14" height="6" fill="#1e3a8a"/>
+        <rect x="4" y="16" width="14" height="6" fill="#1e3a8a"/>
+        <rect x="23" y="8" width="14" height="6" fill="#5b21b6"/>
+        <rect x="42" y="8" width="14" height="6" fill="#065f46"/>
+      </svg></div>
+      <h3>カンバン</h3>
+      <p>ステータス別タスクの一覧</p>
+      <span class="impl impl--mermaid">Mermaid</span>
+    </article>
+
+    <article class="cat-card">
+      <div class="num">24</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <line x1="2" y1="14" x2="58" y2="14" class="t-axis"/>
+        <line x1="2" y1="28" x2="58" y2="28" class="t-axis"/>
+        <rect class="t-node" x="6" y="5" width="10" height="8" rx="1"/>
+        <rect class="t-node" x="24" y="19" width="10" height="8" rx="1"/>
+        <rect class="t-node" x="44" y="30" width="12" height="7" rx="1"/>
+      </svg></div>
+      <h3>スイムレーン</h3>
+      <p>担当別のプロセス配置</p>
+      <span class="impl impl--mermaid">Mermaid (subgraph)</span>
+    </article>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     C. 関係・構造
+     ══════════════════════════════════════════════════════════════════ -->
+<section class="cat-section">
+  <h2>C. 関係・構造</h2>
+  <div class="cat-desc">要素と要素のつながりを描く</div>
+  <div class="card-grid">
+
+    <article class="cat-card">
+      <div class="num">25</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <line x1="12" y1="4" x2="12" y2="36" stroke="#1e3a8a" stroke-width="1.5"/>
+        <line x1="30" y1="4" x2="30" y2="36" stroke="#5b21b6" stroke-width="1.5"/>
+        <line x1="48" y1="4" x2="48" y2="36" stroke="#065f46" stroke-width="1.5"/>
+        <line x1="12" y1="10" x2="30" y2="10" stroke="#94a3b8"/>
+        <line x1="30" y1="18" x2="48" y2="18" stroke="#94a3b8"/>
+        <line x1="48" y1="26" x2="12" y2="26" stroke="#94a3b8" stroke-dasharray="2 2"/>
+      </svg></div>
+      <h3>シーケンス</h3>
+      <p>API / 人のやりとり・時間軸での交換</p>
+      <span class="impl impl--mermaid">Mermaid</span>
+    </article>
+
+    <article class="cat-card">
+      <div class="num">26</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <rect class="t-node" x="4" y="14" width="16" height="12" rx="1"/>
+        <rect class="t-node" x="24" y="4" width="16" height="12" rx="1"/>
+        <rect class="t-node" x="40" y="24" width="16" height="12" rx="1"/>
+        <path class="t-edge" d="M 20 20 L 24 12 M 36 12 L 44 28"/>
+      </svg></div>
+      <h3>ER 図</h3>
+      <p>DB エンティティ関係(1 対 N 等)</p>
+      <span class="impl impl--mermaid">Mermaid</span>
+    </article>
+
+    <article class="cat-card">
+      <div class="num">27</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <rect class="t-node" x="4" y="4" width="20" height="16" rx="1"/>
+        <line x1="4" y1="10" x2="24" y2="10" stroke="#1e3a8a"/>
+        <rect class="t-node" x="36" y="20" width="20" height="16" rx="1"/>
+        <line x1="36" y1="26" x2="56" y2="26" stroke="#1e3a8a"/>
+        <path class="t-edge" d="M 24 14 L 36 26"/>
+      </svg></div>
+      <h3>クラス図</h3>
+      <p>OOP クラスの継承・集約</p>
+      <span class="impl impl--mermaid">Mermaid</span>
+    </article>
+
+    <article class="cat-card">
+      <div class="num">28</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <rect x="2" y="2" width="56" height="36" rx="2" fill="none" stroke="#cbd5e1" stroke-dasharray="3 2"/>
+        <rect x="8" y="8" width="16" height="10" fill="#eff6ff" stroke="#1e3a8a"/>
+        <rect x="36" y="8" width="16" height="10" fill="#f5f0ff" stroke="#5b21b6"/>
+        <rect x="20" y="22" width="20" height="10" fill="#f0fdf4" stroke="#065f46"/>
+        <path class="t-edge" d="M 24 13 L 36 13 M 16 18 L 24 22 M 44 18 L 38 22"/>
+      </svg></div>
+      <h3>C4 Context</h3>
+      <p>システムを俯瞰した構成図(4 レベル)</p>
+      <span class="impl impl--mermaid">Mermaid</span>
+    </article>
+
+    <article class="cat-card">
+      <div class="num">29</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <rect class="t-node" x="4" y="4" width="16" height="10" rx="1"/>
+        <rect class="t-node" x="24" y="4" width="14" height="10" rx="1"/>
+        <rect class="t-node" x="42" y="4" width="14" height="10" rx="1"/>
+        <rect class="t-node" x="4" y="18" width="24" height="10" rx="1"/>
+        <rect class="t-node" x="32" y="18" width="24" height="10" rx="1"/>
+        <rect class="t-node" x="4" y="32" width="52" height="6" rx="1"/>
+      </svg></div>
+      <h3>ブロック図</h3>
+      <p>汎用的なボックス配置・層構造</p>
+      <span class="impl impl--mermaid">Mermaid block</span>
+    </article>
+
+    <article class="cat-card">
+      <div class="num">30</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <rect x="2" y="6" width="12" height="8" fill="#eff6ff" stroke="#1e3a8a"/>
+        <rect x="22" y="16" width="16" height="12" fill="#f5f0ff" stroke="#5b21b6"/>
+        <rect x="46" y="6" width="12" height="8" fill="#f0fdf4" stroke="#065f46"/>
+        <rect x="46" y="28" width="12" height="8" fill="#fff7ed" stroke="#b45309"/>
+        <path class="t-edge" d="M 14 10 L 22 20 M 38 20 L 46 10 M 38 24 L 46 32"/>
+      </svg></div>
+      <h3>アーキテクチャ図</h3>
+      <p>サービス配置・インフラ構成</p>
+      <span class="impl impl--mermaid">Mermaid architecture</span>
+    </article>
+
+    <article class="cat-card">
+      <div class="num">31</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <path d="M 4 8 C 20 8, 30 14, 56 14 L 56 20 C 30 20, 20 14, 4 14 Z" fill="rgba(30,58,138,0.7)"/>
+        <path d="M 4 22 C 20 22, 30 26, 56 26 L 56 30 C 30 30, 20 26, 4 26 Z" fill="rgba(91,33,182,0.7)"/>
+      </svg></div>
+      <h3>サンキー</h3>
+      <p>流れの太さで量を示す(フロー量)</p>
+      <span class="impl impl--mermaid">Mermaid sankey</span>
+    </article>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     D. 概念・整理
+     ══════════════════════════════════════════════════════════════════ -->
+<section class="cat-section">
+  <h2>D. 概念・整理</h2>
+  <div class="cat-desc">考えを整理する・位置づけを示す</div>
+  <div class="card-grid">
+
+    <article class="cat-card">
+      <div class="num">32</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <circle cx="30" cy="20" r="6" fill="#1e3a8a"/>
+        <circle cx="10" cy="10" r="3" fill="#5b21b6"/>
+        <circle cx="10" cy="30" r="3" fill="#065f46"/>
+        <circle cx="50" cy="10" r="3" fill="#b45309"/>
+        <circle cx="50" cy="30" r="3" fill="#9f1239"/>
+        <path class="t-edge" d="M 24 17 L 13 11 M 24 23 L 13 30 M 36 17 L 47 11 M 36 23 L 47 30"/>
+      </svg></div>
+      <h3>マインドマップ</h3>
+      <p>放射状に発想を広げる</p>
+      <span class="impl impl--mermaid">Mermaid</span>
+    </article>
+
+    <article class="cat-card">
+      <div class="num">33</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <rect x="4" y="4" width="52" height="32" fill="none" stroke="#cbd5e1"/>
+        <line x1="30" y1="4" x2="30" y2="36" stroke="#cbd5e1"/>
+        <line x1="4" y1="20" x2="56" y2="20" stroke="#cbd5e1"/>
+        <circle cx="18" cy="12" r="3" fill="#065f46"/>
+        <circle cx="42" cy="12" r="3" fill="#1e3a8a"/>
+        <circle cx="18" cy="28" r="3" fill="#9f1239"/>
+        <circle cx="42" cy="28" r="3" fill="#b45309"/>
+      </svg></div>
+      <h3>2×2 象限 / 優先度マトリクス</h3>
+      <p>重要度 × 緊急度等の配置</p>
+      <span class="impl impl--mermaid">Mermaid quadrant</span>
+    </article>
+
+    <article class="cat-card">
+      <div class="num">34</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <line x1="6" y1="36" x2="56" y2="36" class="t-axis"/>
+        <line x1="6" y1="4" x2="6" y2="36" class="t-axis"/>
+        <polyline class="t-line" points="6,30 18,22 30,26 42,14 54,8"/>
+        <text x="56" y="40" font-size="5" fill="#94a3b8">x</text>
+        <text x="2" y="4" font-size="5" fill="#94a3b8">y</text>
+      </svg></div>
+      <h3>XY チャート</h3>
+      <p>座標軸付きの 2 変数データ</p>
+      <span class="impl impl--mermaid">Mermaid xychart</span>
+    </article>
+
+    <article class="cat-card">
+      <div class="num">35</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <rect class="t-node" x="4" y="8" width="16" height="10" rx="1"/>
+        <rect class="t-node" x="4" y="22" width="16" height="10" rx="1"/>
+        <rect class="t-node" x="40" y="8" width="16" height="10" rx="1"/>
+        <rect class="t-node" x="40" y="22" width="16" height="10" rx="1"/>
+        <path class="t-edge" d="M 20 13 L 40 13 M 20 27 L 40 27 M 12 18 L 12 22 M 48 18 L 48 22"/>
+      </svg></div>
+      <h3>要件図</h3>
+      <p>要件とトレースの関係</p>
+      <span class="impl impl--mermaid">Mermaid requirement</span>
+    </article>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     E. 比較・対応表
+     ══════════════════════════════════════════════════════════════════ -->
+<section class="cat-section">
+  <h2>E. 比較・対応表</h2>
+  <div class="cat-desc">並べて対比・一覧する</div>
+  <div class="card-grid">
+
+    <article class="cat-card">
+      <div class="num">36</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <rect x="2" y="6" width="22" height="28" fill="#fef2f2" stroke="#9f1239"/>
+        <rect x="36" y="6" width="22" height="28" fill="#f0fdf4" stroke="#065f46"/>
+        <text x="30" y="22" text-anchor="middle" font-size="10" font-weight="700" fill="#1e3a8a">→</text>
+      </svg></div>
+      <h3>Before/After カード</h3>
+      <p>前後比較・案比較(絵にしづらい時の逃げ)</p>
+      <span class="impl impl--css">CSS</span>
+    </article>
+
+    <article class="cat-card">
+      <div class="num">37</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <rect x="2" y="4" width="56" height="8" fill="#e5e7eb"/>
+        <rect x="2" y="14" width="56" height="7" fill="#ffffff" stroke="#cbd5e1"/>
+        <rect x="2" y="22" width="56" height="7" fill="#f9fafb" stroke="#cbd5e1"/>
+        <rect x="2" y="30" width="56" height="7" fill="#ffffff" stroke="#cbd5e1"/>
+        <line x1="20" y1="4" x2="20" y2="37" stroke="#cbd5e1"/>
+        <line x1="40" y1="4" x2="40" y2="37" stroke="#cbd5e1"/>
+      </svg></div>
+      <h3>表 / 対応表</h3>
+      <p>分類・仕様書的な一覧</p>
+      <span class="impl impl--css">CSS</span>
+    </article>
+
+    <article class="cat-card">
+      <div class="num">38</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <polygon points="30,4 46,14 14,14" fill="#1e3a8a"/>
+        <polygon points="14,16 46,16 52,26 8,26" fill="#5b21b6"/>
+        <polygon points="8,28 52,28 58,38 2,38" fill="#065f46"/>
+      </svg></div>
+      <h3>ピラミッド</h3>
+      <p>階層的な優先度 / マズロー型</p>
+      <span class="impl impl--svg">SVG / CSS</span>
+    </article>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     F. 情報提示 / 特殊
+     ══════════════════════════════════════════════════════════════════ -->
+<section class="cat-section">
+  <h2>F. 情報提示・特殊</h2>
+  <div class="cat-desc">集合・ピクトグラム・ワードベースの表現</div>
+  <div class="card-grid">
+
+    <article class="cat-card">
+      <div class="num">39</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <circle cx="22" cy="20" r="14" fill="rgba(30,58,138,0.4)"/>
+        <circle cx="38" cy="20" r="14" fill="rgba(159,18,57,0.4)"/>
+      </svg></div>
+      <h3>ベン図</h3>
+      <p>集合の共通・差分・重なり</p>
+      <span class="impl impl--svg">SVG</span>
+    </article>
+
+    <article class="cat-card">
+      <div class="num">40</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <g fill="#1e3a8a">
+          <rect x="4" y="14" width="6" height="14"/><rect x="12" y="14" width="6" height="14"/><rect x="20" y="14" width="6" height="14"/><rect x="28" y="14" width="6" height="14"/>
+        </g>
+        <g fill="#cbd5e1">
+          <rect x="36" y="14" width="6" height="14"/><rect x="44" y="14" width="6" height="14"/><rect x="52" y="14" width="6" height="14"/>
+        </g>
+      </svg></div>
+      <h3>ピクトグラム</h3>
+      <p>アイコン並列で量を表す(10 中 7 等)</p>
+      <span class="impl impl--svg">SVG / CSS</span>
+    </article>
+
+    <article class="cat-card">
+      <div class="num">41</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <rect x="2" y="4" width="18" height="32" fill="#eff6ff" stroke="#1e3a8a"/>
+        <rect x="22" y="4" width="16" height="32" fill="#f5f0ff" stroke="#5b21b6"/>
+        <rect x="40" y="4" width="18" height="32" fill="#f0fdf4" stroke="#065f46"/>
+        <text x="11" y="22" text-anchor="middle" font-size="9" font-weight="700" fill="#1e3a8a">72%</text>
+        <text x="30" y="22" text-anchor="middle" font-size="9" font-weight="700" fill="#5b21b6">45</text>
+        <text x="49" y="22" text-anchor="middle" font-size="9" font-weight="700" fill="#065f46">3.2x</text>
+      </svg></div>
+      <h3>メトリクスカード</h3>
+      <p>重要数値を大きく並べて見せる</p>
+      <span class="impl impl--css">CSS</span>
+    </article>
+
+    <article class="cat-card">
+      <div class="num">42</div>
+      <div class="thumb"><svg viewBox="0 0 60 40">
+        <text x="10" y="16" font-size="10" font-weight="800" fill="#1e3a8a">Data</text>
+        <text x="34" y="14" font-size="6" fill="#5b21b6">fast</text>
+        <text x="44" y="22" font-size="8" font-weight="700" fill="#065f46">UX</text>
+        <text x="10" y="28" font-size="5" fill="#b45309">scale</text>
+        <text x="24" y="32" font-size="7" font-weight="700" fill="#9f1239">ship</text>
+      </svg></div>
+      <h3>ワードクラウド</h3>
+      <p>頻度でフォントサイズを変える</p>
+      <span class="impl impl--custom">独自実装</span>
+    </article>
+  </div>
+</section>
+
+<footer style="padding: 24px 48px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.85rem;">
+  番号で採用候補を教えてください。複数選択可(例: 01, 04, 19, 32, 37)。既に html-document スキルで採用済み: 01 / 13 / 19 / 25 / 32 / 36 / 37
+</footer>
+
+</main>
+
+</body>
+</html>

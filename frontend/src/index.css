@@ -506,6 +506,46 @@ input {
   overflow-wrap: anywhere;
 }
 
+/* 段落: block 単位でまとめた文の固まり。段落間に余白を入れて改行構造を保つ。 */
+.reader-text .para {
+  margin: 0 0 0.9em;
+}
+.reader-text .para:last-child {
+  margin-bottom: 0;
+}
+
+/* 数式/行列の固まり(日本語を含まない行のまとまり)。PDFは2次元配置を持てないので
+   「数式ブロック」として詰めて縦に並べ、崩れた本文ではなく式の塊だと分かる見た目にする。 */
+.reader-text .para-math {
+  font-family: "Latin Modern Math", "Cambria Math", ui-serif, serif;
+  background: rgba(64, 50, 32, 0.05);
+  border-left: 3px solid rgba(64, 50, 32, 0.18);
+  border-radius: 4px;
+  padding: 0.5em 0.9em;
+  margin: 0.8em 0;
+  overflow-x: auto;
+}
+/* 数式/行列の各行。1行ずつ縦に詰めて並べる(line-height:2 のスカスカを防ぐ)。 */
+.reader-text .seg-line {
+  display: block;
+  line-height: 1.5;
+}
+
+/* コードブロック。原文の改行・字下げをそのまま等幅で表示する。 */
+.reader-text .code-block {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.82em;
+  line-height: 1.55;
+  background: #1e1e2e;
+  color: #e6e6ec;
+  padding: 0.85em 1.1em;
+  border-radius: 6px;
+  margin: 0.8em 0;
+  overflow-x: auto;
+  white-space: pre;
+  cursor: pointer;
+}
+
 /* 数式(KaTeX)のレイアウト */
 .reader-text .katex-display {
   /* 別行立て数式は自前の行に。超幅広の式は紙内で横スクロール。 */

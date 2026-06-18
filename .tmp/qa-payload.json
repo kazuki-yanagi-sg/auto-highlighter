@@ -1,0 +1,5 @@
+{
+  "q": "開発サーバー・ブラウザ・バックエンドの関係を図で見たい",
+  "a": "ブラウザは localhost:5173 でコンテナ内のVite開発サーバーに繋がります。/api へのリクエストはViteのproxyが同じcomp*ネットワーク上の backend:8000 へ転送し、backendはdb:5432へアクセスします。",
+  "mermaid": "flowchart LR\n  B[\"ブラウザ localhost:5173\"] --> V[\"Vite開発サーバー frontendコンテナ:5173\"]\n  V -->|\"/api を転送\"| A[\"backend:8000 FastAPI\"]\n  A --> D[(\"db:5432 Postgres\")]"
+}

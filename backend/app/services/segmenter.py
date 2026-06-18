@@ -60,17 +60,41 @@ def segment_blocks(blocks, max_per_page: int = 80) -> list["Segment"]:
     order = 0
     page = 0
     on_page = 0  # 現ページに積んだ文数
+    block_id = 0  # 入力ブロックごとに採番(同段落の文をまとめる識別子)
     has_content = False
     for block in blocks:
-        if getattr(block, "kind", "text") == "heading" and has_content:
+        kind = getattr(block, "kind", "text")
+        if kind == "heading" and has_content:
             page += 1
             on_page = 0
+        # コードは文分割せず、改行・字下げを保ったまま1セグメントにする。
+        if kind == "code":
+            if on_page >= max_per_page:
+                page += 1
+                on_page = 0
+            segments.append(
+                Segment(
+                    order=order,
+                    text=block.text,
+                    page=page,
+                    block=block_id,
+                    kind="code",
+                )
+            )
+            order += 1
+            on_page += 1
+            has_content = True
+            block_id += 1
+            continue
         for sentence in _sentences(block.text):
             if on_page >= max_per_page:
                 page += 1
                 on_page = 0
-            segments.append(Segment(order=order, text=sentence, page=page))
+            segments.append(
+                Segment(order=order, text=sentence, page=page, block=block_id)
+            )
             order += 1
             on_page += 1
             has_content = True
+        block_id += 1
     return segments

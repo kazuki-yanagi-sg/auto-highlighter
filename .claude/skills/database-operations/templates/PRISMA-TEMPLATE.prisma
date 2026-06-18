@@ -1,0 +1,49 @@
+// Prisma テンプレート
+// 参考: client/prisma/schema.prisma
+
+enum ModelStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Model {
+  id        String   @id @default(uuid()) @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  title       String      @db.VarChar(300)
+  description String?
+  status      ModelStatus @default(ACTIVE)
+
+  userId String @map("user_id") @db.Uuid
+
+  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  children ChildModel[]
+
+  @@index([userId])
+  @@map("models")
+}
+
+
+// 中間テーブル例
+// model ModelsUser {
+//   id        String   @id @default(uuid()) @db.Uuid
+//   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+//   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+//
+//   modelId String @map("model_id") @db.Uuid
+//   userId  String @map("user_id") @db.Uuid
+//
+//   model Model @relation(fields: [modelId], references: [id], onDelete: Cascade)
+//   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+//
+//   @@unique([modelId, userId])
+//   @@index([modelId])
+//   @@index([userId])
+//   @@map("models_users")
+// }
+
+
+// 複数外部キー例（名前付きリレーション）
+// assignedUser  User? @relation("AssignedTickets", fields: [assignedUserId], references: [id], onDelete: Cascade)
+// createdByUser User  @relation("CreatedTickets", fields: [createdByUserId], references: [id], onDelete: Cascade)

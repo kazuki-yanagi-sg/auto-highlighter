@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<!--
+  ══════════════════════════════════════════════════════════════════
+  verify-screen レポートテンプレート (骨組み)
+  ══════════════════════════════════════════════════════════════════
+  このファイルは verify-screen skill が **コピー元** として使う。
+  中身は中立的プレースホルダー。最小動作する値だけ埋めてある。
+  完成見本を確認したい場合は sample.html を開け。
+
+  運用ルール:
+    - skill 側で `<main-worktree>/.tmp/<REPORT_ID>/index.html` に cp する
+    - REPORT_ID は `<YYYYMMDDHHMMSS>-<PR|issue 番号>-<slug>` 形式
+    - 各 screenshots は `screenshots/<YYYYMMDDHHMMSS>-<NN>-<phase>.png`
+
+  埋める順序:
+    1. <title> / ヘッダー (REPORT_ID / PR / issue / branch / worktree / dev URL / 実行時刻)
+    2. Summary bar (シナリオ件数 / 操作件数 / OK / 警告 / 失敗)
+    3. §0 業務テストシナリオ (期待値定義テーブル)
+    4. §1 操作ログ (シナリオ # 紐付け + 多段キャプチャ)
+    5. §2-3 観点チェック (レイアウト / 既存画面整合性)
+    6. §4 総括 / 問題点
+  ══════════════════════════════════════════════════════════════════
+-->
+<html lang="ja" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>verify-screen レポート (scenario 名)</title>
+
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root[data-theme="light"] {
+    --bg: #f6f8fa;
+    --bg-card: #ffffff;
+    --bg-deep: #f0f2f5;
+    --border: #d0d7de;
+    --text: #1f2328;
+    --text-strong: #1f2328;
+    --text-muted: #656d76;
+    --text-faint: #8b949e;
+    --accent: #2563eb;
+    --accent-light: #eff6ff;
+    --accent-border: #3b82f644;
+    --success: #16a34a;
+    --success-light: #f0fdf4;
+    --success-border: #22c55e44;
+    --warning: #d97706;
+    --warning-light: #fffbeb;
+    --warning-border: #f59e0b44;
+    --info: #7c3aed;
+    --info-light: #f5f0ff;
+    --info-border: #8b5cf644;
+    --danger: #dc2626;
+    --danger-light: #fef2f2;
+    --danger-border: #ef444444;
+    --toggle-bg: #e8ecf0;
+    --toggle-hover: #d0d7de;
+    --progress-bg: #e5e7eb;
+    --table-stripe: #f9fafb;
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d1117;
+    --bg-card: #161b22;
+    --bg-deep: #0d1117;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --text-strong: #e6edf3;
+    --text-muted: #8b949e;
+    --text-faint: #484f58;
+    --accent: #58a6ff;
+    --accent-light: #152230;
+    --accent-border: #3b82f633;
+    --success: #3fb950;
+    --success-light: #1a2215;
+    --success-border: #22c55e33;
+    --warning: #d29922;
+    --warning-light: #221a15;
+    --warning-border: #f59e0b33;
+    --info: #a78bfa;
+    --info-light: #1a1530;
+    --info-border: #8b5cf633;
+    --danger: #f85149;
+    --danger-light: #220d0d;
+    --danger-border: #ef444433;
+    --toggle-bg: #21262d;
+    --toggle-hover: #30363d;
+    --progress-bg: #30363d;
+    --table-stripe: #161b22;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.55;
+    transition: background 0.25s, color 0.25s;
+  }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px 64px; }
+
+  /* ── Header ── */
+  header {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 28px;
+    margin-bottom: 24px;
+    position: relative;
+  }
+  .doc-type {
+    font-size: 0.8rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--accent); margin-bottom: 6px;
+  }
+  header h1 { font-size: 1.6rem; color: var(--text-strong); font-weight: 800; line-height: 1.3; margin-bottom: 12px; }
+  .doc-meta {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 4px 14px;
+    font-size: 0.88rem; color: var(--text-muted);
+  }
+  .doc-meta dt { font-weight: 600; color: var(--text-faint); }
+  .doc-meta dd { color: var(--text); word-break: break-all; }
+  .doc-meta dd code, .doc-meta dd a {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.85rem;
+  }
+  .doc-meta dd a { color: var(--accent); text-decoration: none; }
+  .doc-meta dd a:hover { text-decoration: underline; }
+  .theme-toggle {
+    position: absolute; top: 16px; right: 20px;
+    display: flex; gap: 2px;
+    background: var(--toggle-bg); border-radius: 8px; padding: 3px;
+  }
+  .theme-toggle button {
+    border: none; background: transparent;
+    color: var(--text-muted);
+    font-size: 0.78rem; padding: 4px 12px;
+    border-radius: 6px; cursor: pointer; font-weight: 600;
+  }
+  .theme-toggle button:hover { background: var(--toggle-hover); }
+  .theme-toggle button.active { background: var(--bg-card); color: var(--text-strong); box-shadow: 0 1px 3px #00000020; }
+
+  /* ── Summary bar ── */
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .summary-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .summary-card .label { font-size: 0.75rem; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .summary-card .value { font-size: 1.4rem; font-weight: 800; color: var(--text-strong); }
+  .summary-card--success .value { color: var(--success); }
+  .summary-card--warning .value { color: var(--warning); }
+  .summary-card--danger  .value { color: var(--danger); }
+  .summary-card--info    .value { color: var(--info); }
+
+  /* ── Section base ── */
+  .section { margin-top: 40px; }
+  .section-header {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 14px; padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-number {
+    flex: 0 0 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.85rem; font-weight: 800;
+    border-radius: 50%; background: var(--accent); color: #fff;
+  }
+  .section-number--summary { background: var(--info); }
+  .section h2 { font-size: 1.35rem; font-weight: 700; color: var(--text-strong); }
+  .section-lead {
+    color: var(--text-muted);
+    font-size: 0.88rem;
+    margin-bottom: 14px;
+  }
+
+  /* ── §0 シナリオテーブル ── */
+  .scenario-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .scenario-table th {
+    text-align: left; padding: 10px 14px;
+    background: var(--bg-deep); color: var(--text-strong);
+    font-weight: 700;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.78rem;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+  .scenario-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text); vertical-align: top;
+  }
+  .scenario-table tr:last-child td { border-bottom: none; }
+  .scenario-table tr:nth-child(even) td { background: var(--table-stripe); }
+  .scenario-table td.col-id { white-space: nowrap; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .scenario-table td.col-eval { white-space: nowrap; font-weight: 700; }
+
+  /* ── §1 操作ログブロック (繰り返し) ── */
+  .op-block {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+  }
+  .op-block--success { border-left-color: var(--success); }
+  .op-block--warning { border-left-color: var(--warning); }
+  .op-block--danger  { border-left-color: var(--danger); }
+
+  .op-header {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .op-index {
+    flex: 0 0 auto;
+    font-size: 0.72rem; font-weight: 700;
+    color: var(--text-faint);
+    background: var(--bg-deep);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-variant-numeric: tabular-nums;
+  }
+  .op-scenario {
+    font-size: 0.72rem; font-weight: 700;
+    color: var(--accent);
+    background: var(--accent-light);
+    border: 1px solid var(--accent-border);
+    border-radius: 4px;
+    padding: 2px 8px;
+  }
+  .op-name { font-size: 1.05rem; font-weight: 700; color: var(--text-strong); }
+  .op-result {
+    margin-left: auto;
+    font-size: 0.85rem; font-weight: 700;
+    padding: 3px 10px; border-radius: 14px;
+  }
+  .op-result--ok      { background: var(--success-light); color: var(--success); border: 1px solid var(--success-border); }
+  .op-result--warn    { background: var(--warning-light); color: var(--warning); border: 1px solid var(--warning-border); }
+  .op-result--fail    { background: var(--danger-light);  color: var(--danger);  border: 1px solid var(--danger-border); }
+
+  .op-meta {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 6px 12px;
+    font-size: 0.88rem;
+    margin-bottom: 12px;
+    background: var(--bg-deep);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+  }
+  .op-meta dt { color: var(--text-faint); font-weight: 600; }
+  .op-meta dd { color: var(--text); }
+  .op-meta dd.diff { color: var(--danger); font-weight: 600; }
+
+  .op-counters {
+    display: flex; gap: 10px; flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .counter {
+    font-size: 0.78rem; font-weight: 700;
+    padding: 3px 10px; border-radius: 12px;
+    background: var(--bg-deep); color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+  .counter--alert { background: var(--danger-light); color: var(--danger); border-color: var(--danger-border); }
+
+  /* ── 多段キャプチャ (1 操作内に複数 phase) ── */
+  .op-shots {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+  }
+  .op-shot {
+    background: var(--bg-deep);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .op-shot-label {
+    font-size: 0.72rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--text-muted);
+    padding: 6px 10px;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; gap: 6px;
+  }
+  .op-shot-label .shot-phase { color: var(--text-strong); }
+  .op-shot-label .shot-time { color: var(--text-faint); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight: 600; }
+  .op-shot img {
+    display: block; width: 100%; max-width: 100%; height: auto;
+  }
+  .op-shot--missing {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 120px;
+    color: var(--text-faint);
+    font-size: 0.85rem;
+  }
+  .op-shot-placeholder {
+    background: repeating-linear-gradient(
+      135deg,
+      var(--bg-deep) 0,
+      var(--bg-deep) 8px,
+      var(--bg-card) 8px,
+      var(--bg-card) 16px
+    );
+    border-top: 1px dashed var(--border);
+    min-height: 170px;
+    display: flex; align-items: center; justify-content: center;
+    text-align: center;
+    padding: 18px 14px;
+  }
+  .op-shot-placeholder .ph-label {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    line-height: 1.5;
+    font-weight: 600;
+  }
+  .op-shot-placeholder .ph-hint {
+    color: var(--text-faint);
+    font-size: 0.72rem;
+    margin-top: 4px;
+  }
+  /* snapshot YAML への link (ref 起源の追跡用、playwright-cli snapshot 出力) */
+  .op-shot-yaml {
+    display: block;
+    padding: 5px 10px;
+    font-size: 0.7rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color: var(--accent);
+    text-decoration: none;
+    border-top: 1px solid var(--border);
+    background: var(--bg-card);
+  }
+  .op-shot-yaml:hover { text-decoration: underline; }
+  .op-shot-yaml::before { content: "📄 snapshot: "; color: var(--text-faint); }
+
+  /* ── 観点チェックテーブル ── */
+  .review-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .review-table th {
+    text-align: left; padding: 10px 14px;
+    background: var(--bg-deep); color: var(--text-strong);
+    font-weight: 700;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.78rem;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+  .review-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text); vertical-align: top;
+  }
+  .review-table tr:last-child td { border-bottom: none; }
+  .review-table tr:nth-child(even) td { background: var(--table-stripe); }
+  .review-table td.col-eval { white-space: nowrap; font-weight: 700; }
+  .eval-ok    { color: var(--success); }
+  .eval-warn  { color: var(--warning); }
+  .eval-fail  { color: var(--danger); }
+  .eval-skip  { color: var(--text-faint); }
+  .review-table td.col-ref {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  /* ── §5 総括ブロック ── */
+  .summary-block {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin-bottom: 16px;
+  }
+  .summary-block h3 {
+    font-size: 0.92rem; color: var(--text-strong);
+    font-weight: 700; margin-bottom: 8px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .summary-block h3 .badge {
+    font-size: 0.7rem; font-weight: 700;
+    padding: 2px 8px; border-radius: 10px;
+    background: var(--bg-deep); color: var(--text-muted);
+    border: 1px solid var(--border);
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .summary-block h3 .badge--ok   { background: var(--success-light); color: var(--success); border-color: var(--success-border); }
+  .summary-block h3 .badge--warn { background: var(--warning-light); color: var(--warning); border-color: var(--warning-border); }
+  .summary-block h3 .badge--fail { background: var(--danger-light);  color: var(--danger);  border-color: var(--danger-border); }
+  .summary-block ul {
+    list-style: none; padding-left: 0;
+    color: var(--text); font-size: 0.92rem;
+  }
+  .summary-block li {
+    padding: 6px 0 6px 18px;
+    position: relative;
+    border-bottom: 1px dashed var(--border);
+  }
+  .summary-block li:last-child { border-bottom: none; }
+  .summary-block li::before {
+    content: "›";
+    position: absolute; left: 0; top: 6px;
+    color: var(--accent); font-weight: 700;
+  }
+  .summary-block li.li-warn::before { color: var(--warning); content: "⚠"; }
+  .summary-block li.li-fail::before { color: var(--danger);  content: "✗"; }
+  .summary-block li.li-todo::before { color: var(--info);    content: "→"; }
+
+  /* ── Empty state ── */
+  .empty {
+    padding: 18px 20px;
+    background: var(--bg-card);
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    color: var(--text-faint);
+    font-size: 0.9rem;
+  }
+
+  /* ── Footer ── */
+  footer {
+    margin-top: 48px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 0.78rem;
+    color: var(--text-faint);
+    text-align: center;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  @media print {
+    .theme-toggle { display: none; }
+    body { background: #fff; color: #000; font-size: 11pt; }
+    @page { margin: 15mm; }
+    .op-block, .section, .summary-card, .summary-block { break-inside: avoid; page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <header>
+    <div class="theme-toggle">
+      <button type="button" onclick="setTheme('light')" id="btnLight" class="active">Light</button>
+      <button type="button" onclick="setTheme('dark')" id="btnDark">Dark</button>
+    </div>
+    <div class="doc-type">verify-screen レポート</div>
+    <h1 id="report-title">scenario 名をここに</h1>
+    <dl class="doc-meta">
+      <dt>report id</dt>     <dd id="meta-report-id"><code>&lt;YYYYMMDDHHMMSS&gt;-&lt;PR or issue 番号&gt;-&lt;slug&gt;</code></dd>
+      <dt>PR</dt>            <dd id="meta-pr"><a href="https://github.com/sky-grid-inc/senri-core-system-2/pull/0000">#0000</a></dd>
+      <dt>issue</dt>         <dd id="meta-issue"><a href="https://github.com/sky-grid-inc/senri-core-system-2/issues/0000">#0000</a></dd>
+      <dt>branch</dt>        <dd id="meta-branch"><code>feature/&lt;name&gt;</code></dd>
+      <dt>worktree</dt>      <dd id="meta-worktree"><code>.claude/worktrees/feature/&lt;name&gt;/</code></dd>
+      <dt>実行</dt>          <dd id="meta-timestamp">YYYY-MM-DD HH:MM:SS JST</dd>
+      <dt>client</dt>        <dd id="meta-client-url"><code>http://localhost:&lt;CLIENT_PORT&gt;</code></dd>
+      <dt>api</dt>           <dd id="meta-api-url"><code>http://localhost:&lt;API_PORT&gt;</code></dd>
+    </dl>
+  </header>
+
+  <!--
+    ═══════════════════════════════════════════════════════════
+    Summary bar
+    skill 側でシナリオ件数 / 操作件数 / OK / 警告 / 失敗を埋める
+    ═══════════════════════════════════════════════════════════
+  -->
+  <div class="summary" id="summary">
+    <div class="summary-card summary-card--info">
+      <div class="label">シナリオ</div>
+      <div class="value" id="sum-scenarios">0</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">操作</div>
+      <div class="value" id="sum-ops">0</div>
+    </div>
+    <div class="summary-card summary-card--success">
+      <div class="label">OK</div>
+      <div class="value" id="sum-ok">0</div>
+    </div>
+    <div class="summary-card summary-card--warning">
+      <div class="label">警告</div>
+      <div class="value" id="sum-warn">0</div>
+    </div>
+    <div class="summary-card summary-card--danger">
+      <div class="label">失敗</div>
+      <div class="value" id="sum-fail">0</div>
+    </div>
+  </div>
+
+  <!--
+    ═══════════════════════════════════════════════════════════
+    §0 業務テストシナリオ (期待値定義)
+    ───────────────────────────────────────────────────────────
+    e2e 実走に入る前に、業務観点で「何が起きるべきか」をシナリオ単位で書き出す。
+    skill フローの先頭で必ず埋める。
+    実走後にこの表の「結果」列を ✅/⚠/❌ で更新する。
+    ═══════════════════════════════════════════════════════════
+  -->
+  <section class="section" id="section-scenarios">
+    <div class="section-header">
+      <span class="section-number section-number--summary">0</span>
+      <h2>業務テストシナリオ (期待値定義)</h2>
+    </div>
+    <p class="section-lead">
+      対象画面で実現される業務挙動を、シナリオ単位で先に書き出す。各シナリオは「業務目的」と「期待される業務挙動」をペアで定義し、実走後に結果列を更新する。
+    </p>
+    <table class="scenario-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>業務目的</th>
+          <th>期待される業務挙動</th>
+          <th>検証方法</th>
+          <th>結果</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="col-id">S-01</td>
+          <td>業務上の目的 (例: ユーザーが新規データを登録できる)</td>
+          <td>期待される挙動 (例: form 送信後、一覧 row が 1 件増え、登録した値が表示される)</td>
+          <td>対応する操作 # (例: 01 → 02)</td>
+          <td class="col-eval eval-skip">— 未実施</td>
+        </tr>
+        <tr>
+          <td class="col-id">S-02</td>
+          <td>業務目的</td>
+          <td>期待挙動</td>
+          <td>操作 #</td>
+          <td class="col-eval eval-skip">— 未実施</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!--
+    ═══════════════════════════════════════════════════════════
+    §1 操作ログ (繰り返しブロック)
+    ───────────────────────────────────────────────────────────
+    1 操作 1 .op-block。skill 側で n 個複製する。
+    必須要素:
+      - 操作名 / 対応シナリオ # / 期待結果 / 実結果
+      - 多段キャプチャ (.op-shot を 2-N 枚、画面遷移の節目で都度撮る)
+      - console / network 件数
+    画像 path: screenshots/<YYYYMMDDHHMMSS>-<NN>-<phase-slug>.png (相対)
+    ═══════════════════════════════════════════════════════════
+  -->
+  <section class="section" id="section-operations">
+    <div class="section-header">
+      <span class="section-number">1</span>
+      <h2>操作ログ</h2>
+    </div>
+    <p class="section-lead">
+      シナリオを実走しながら、画面遷移の節目ごとにキャプチャを残す。1 操作 = 複数キャプチャを想定。
+    </p>
+
+    <!-- ─── 1 操作 = 1 .op-block。skill 側で複製 ─── -->
+    <article class="op-block op-block--success">
+      <div class="op-header">
+        <span class="op-index">01</span>
+        <span class="op-scenario">S-01</span>
+        <span class="op-name">操作名 (例: 一覧表示 / 登録 / 詳細参照 / 更新 / 削除 から 1 つ)</span>
+        <span class="op-result op-result--ok">✅ 一致</span>
+      </div>
+      <dl class="op-meta">
+        <dt>期待結果</dt>
+        <dd>期待される挙動を 1 文で記述</dd>
+        <dt>実結果</dt>
+        <dd>実際に観測された挙動を 1 文で記述</dd>
+      </dl>
+      <div class="op-counters">
+        <span class="counter">console 0 件</span>
+        <span class="counter">network error 0 件</span>
+      </div>
+      <div class="op-shots">
+        <figure class="op-shot">
+          <figcaption class="op-shot-label">
+            <span class="shot-phase">① 開く前</span>
+            <span class="shot-time">10:00:00</span>
+          </figcaption>
+          <div class="op-shot-placeholder">
+            <div>
+              <div class="ph-label">screenshots/&lt;YYYYMMDDHHMMSS&gt;-01-before.png</div>
+              <div class="ph-hint">撮影後にこの div を img に置換</div>
+            </div>
+          </div>
+          <a class="op-shot-yaml" href="snapshots/&lt;YYYYMMDDHHMMSS&gt;-01-before.yml">snapshots/&lt;YYYYMMDDHHMMSS&gt;-01-before.yml</a>
+        </figure>
+        <figure class="op-shot">
+          <figcaption class="op-shot-label">
+            <span class="shot-phase">② dialog 表示</span>
+            <span class="shot-time">10:00:02</span>
+          </figcaption>
+          <div class="op-shot-placeholder">
+            <div>
+              <div class="ph-label">screenshots/&lt;YYYYMMDDHHMMSS&gt;-01-dialog.png</div>
+              <div class="ph-hint">撮影後にこの div を img に置換</div>
+            </div>
+          </div>
+          <a class="op-shot-yaml" href="snapshots/&lt;YYYYMMDDHHMMSS&gt;-01-dialog.yml">snapshots/&lt;YYYYMMDDHHMMSS&gt;-01-dialog.yml</a>
+        </figure>
+        <figure class="op-shot">
+          <figcaption class="op-shot-label">
+            <span class="shot-phase">③ フォーカス確認</span>
+            <span class="shot-time">10:00:03</span>
+          </figcaption>
+          <div class="op-shot-placeholder">
+            <div>
+              <div class="ph-label">screenshots/&lt;YYYYMMDDHHMMSS&gt;-01-focus.png</div>
+              <div class="ph-hint">撮影後にこの div を img に置換</div>
+            </div>
+          </div>
+        </figure>
+      </div>
+    </article>
+
+    <!-- 失敗例: op-block--danger / op-result--fail / counter--alert / dd.diff を併用 -->
+    <article class="op-block op-block--danger">
+      <div class="op-header">
+        <span class="op-index">02</span>
+        <span class="op-scenario">S-01</span>
+        <span class="op-name">操作名 (例: 登録 submit で失敗するケース)</span>
+        <span class="op-result op-result--fail">❌ 不一致</span>
+      </div>
+      <dl class="op-meta">
+        <dt>期待結果</dt>
+        <dd>form 送信後に dialog が閉じ、一覧 row が 1 件増える</dd>
+        <dt>実結果</dt>
+        <dd class="diff">submit ボタンが disabled のまま反応せず、500 エラー</dd>
+      </dl>
+      <div class="op-counters">
+        <span class="counter counter--alert">console 2 件</span>
+        <span class="counter counter--alert">network error 1 件 (500)</span>
+      </div>
+      <div class="op-shots">
+        <figure class="op-shot">
+          <figcaption class="op-shot-label">
+            <span class="shot-phase">① 入力前</span>
+            <span class="shot-time">10:01:00</span>
+          </figcaption>
+          <div class="op-shot-placeholder">
+            <div>
+              <div class="ph-label">screenshots/&lt;YYYYMMDDHHMMSS&gt;-02-before.png</div>
+              <div class="ph-hint">撮影後にこの div を img に置換</div>
+            </div>
+          </div>
+        </figure>
+        <figure class="op-shot">
+          <figcaption class="op-shot-label">
+            <span class="shot-phase">② 入力後</span>
+            <span class="shot-time">10:01:05</span>
+          </figcaption>
+          <div class="op-shot-placeholder">
+            <div>
+              <div class="ph-label">screenshots/&lt;YYYYMMDDHHMMSS&gt;-02-filled.png</div>
+              <div class="ph-hint">撮影後にこの div を img に置換</div>
+            </div>
+          </div>
+        </figure>
+        <figure class="op-shot op-shot--missing">
+          画像なし (submit 後の状態を取れなかった)
+        </figure>
+      </div>
+    </article>
+  </section>
+
+  <!--
+    ═══════════════════════════════════════════════════════════
+    §2 観点チェック ─ レイアウト
+    checklist.md §2 レイアウト観点 の項目を 1 行 1 項目で書き出し
+    ═══════════════════════════════════════════════════════════
+  -->
+  <section class="section" id="section-layout">
+    <div class="section-header">
+      <span class="section-number">2</span>
+      <h2>観点チェック ─ レイアウト</h2>
+    </div>
+    <table class="review-table">
+      <thead>
+        <tr>
+          <th>項目</th>
+          <th>評価</th>
+          <th>キャプチャ</th>
+          <th>コメント</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>余白 / 行間に乱れがない</td>
+          <td class="col-eval eval-ok">✅ OK</td>
+          <td class="col-ref">01-①</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>文字溢れ・折り返しが起きない</td>
+          <td class="col-eval eval-skip">— 未確認</td>
+          <td class="col-ref">—</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>列幅 / column 並びがビジネス順に揃う</td>
+          <td class="col-eval eval-skip">— 未確認</td>
+          <td class="col-ref">—</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>要素の重なり / clipping (目視必須)</td>
+          <td class="col-eval eval-skip">— 未確認</td>
+          <td class="col-ref">—</td>
+          <td>screenshot を Read tool で開いて目視判定 (overlap / clipping / 領域はみ出し / 折り返し破綻 / 操作要素隠蔽)</td>
+        </tr>
+        <tr>
+          <td>操作導線 (primary CTA) が見つかる</td>
+          <td class="col-eval eval-skip">— 未確認</td>
+          <td class="col-ref">—</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>空状態 / ローディング / エラー表示</td>
+          <td class="col-eval eval-skip">— 未確認</td>
+          <td class="col-ref">—</td>
+          <td>—</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!--
+    ═══════════════════════════════════════════════════════════
+    §3 観点チェック ─ 既存画面整合性
+    checklist.md §3 既存画面整合性観点 の項目を 1 行 1 項目で書き出し
+    比較対象画面の選び方は「同 feature → 同階層 → 全社共通」の優先順位
+    ═══════════════════════════════════════════════════════════
+  -->
+  <section class="section" id="section-consistency">
+    <div class="section-header">
+      <span class="section-number">3</span>
+      <h2>観点チェック ─ 既存画面整合性</h2>
+    </div>
+    <dl class="op-meta" style="margin-bottom: 14px;">
+      <dt>比較対象画面</dt>
+      <dd id="ref-screen"><code>/&lt;同 feature の参照画面 path&gt;</code></dd>
+    </dl>
+    <table class="review-table">
+      <thead>
+        <tr>
+          <th>項目</th>
+          <th>評価</th>
+          <th>キャプチャ</th>
+          <th>コメント</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>余白 / 行高が比較画面と揃う</td>
+          <td class="col-eval eval-skip">— 未確認</td>
+          <td class="col-ref">—</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>配色 (primary / muted / destructive) が揃う</td>
+          <td class="col-eval eval-skip">— 未確認</td>
+          <td class="col-ref">—</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>action ボタン配置 (右上 / 右下) が揃う</td>
+          <td class="col-eval eval-skip">— 未確認</td>
+          <td class="col-ref">—</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>列構成 / カラム順 / sort 既定が揃う</td>
+          <td class="col-eval eval-skip">— 未確認</td>
+          <td class="col-ref">—</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>空状態表現が揃う</td>
+          <td class="col-eval eval-skip">— 未確認</td>
+          <td class="col-ref">—</td>
+          <td>—</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!--
+    ═══════════════════════════════════════════════════════════
+    §4 総括 / 問題点
+    ───────────────────────────────────────────────────────────
+    全シナリオ実走後の最終所感。
+    - 総合判定: ✅ Pass / ⚠ Conditional Pass / ❌ Fail
+    - 問題点 (要修正 / 要相談 / 警告)
+    ═══════════════════════════════════════════════════════════
+  -->
+  <section class="section" id="section-conclusion">
+    <div class="section-header">
+      <span class="section-number section-number--summary">4</span>
+      <h2>総括 / 問題点</h2>
+    </div>
+
+    <div class="summary-block">
+      <h3>総合判定 <span class="badge badge--warn">⚠ Conditional Pass</span></h3>
+      <ul>
+        <li>シナリオ全件のうち何件が ✅ / ⚠ / ❌ かを 1 行で要約</li>
+      </ul>
+    </div>
+
+    <div class="summary-block">
+      <h3>問題点</h3>
+      <ul>
+        <li class="li-warn">⚠ 観測された差異 / 期待値とのギャップを 1 行ずつ</li>
+        <li class="li-fail">✗ 失敗した操作を 1 行ずつ (該当操作 # を併記)</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    Generated by <a href="https://github.com/sky-grid-inc/senri-core-system-2/tree/develop/.claude/skills/verify-screen">verify-screen</a> skill
+  </footer>
+
+</div>
+
+<script>
+  // file:// / プライベートモードでも落ちない localStorage ラッパ
+  function safeGet(key) {
+    try { return localStorage.getItem(key); } catch (e) { return null; }
+  }
+  function safeSet(key, val) {
+    try { localStorage.setItem(key, val); } catch (e) { /* ignore */ }
+  }
+
+  function setTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    document.getElementById('btnLight').classList.toggle('active', t === 'light');
+    document.getElementById('btnDark').classList.toggle('active', t === 'dark');
+    safeSet('verify-screen-report-theme', t);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // 保存テーマ優先 / 未設定なら prefers-color-scheme
+    let initial = safeGet('verify-screen-report-theme');
+    if (!initial) {
+      initial = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    setTheme(initial);
+  });
+</script>
+</body>
+</html>

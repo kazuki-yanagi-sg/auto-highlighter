@@ -52,6 +52,8 @@ class SegmentOut(BaseModel):
     text: str
     marker: str | None
     page: int
+    block: int
+    kind: str = "text"
 
 
 class NoteOut(BaseModel):
@@ -147,6 +149,8 @@ def document_to_out(document: Document) -> DocumentOut:
                 text=s.text,
                 marker=color_to_api(s.marker),
                 page=s.page,
+                block=s.block,
+                kind=s.kind,
             )
             for s in document.segments
         ],

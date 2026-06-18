@@ -1,0 +1,125 @@
+{
+  "version": "2.0.0",
+  "last_updated": "2025-10-01",
+  "categories": {
+    "ci": "Continuous integration and automation",
+    "claude": "Claude Code configuration and management",
+    "deps": "Dependency management",
+    "dev": "Development and code generation",
+    "git": "Git operations and branch management",
+    "issue": "Issue and ticket management",
+    "test": "Testing and quality assurance"
+  },
+  "commands": {
+    "ci:fix-ci-error": {
+      "created": "2025-08-21",
+      "category": "ci",
+      "description": "CI環境のエラーを自動修正"
+    },
+    "claude:generate-command": {
+      "created": "2025-08-21",
+      "category": "claude",
+      "description": "ベストプラクティスに従ったコマンド生成"
+    },
+    "deps:grouping": {
+      "created": "2025-08-21",
+      "category": "deps",
+      "description": "Dependabotグルーピング設定の自動生成"
+    },
+    "deps:upgrade": {
+      "created": "2025-08-21",
+      "category": "deps",
+      "description": "DependabotのPR処理と修正"
+    },
+    "dev:refactor-safe": {
+      "created": "2025-08-21",
+      "category": "dev",
+      "description": "仕様を壊さない安全なリファクタリング"
+    },
+    "dev:refactor-thorough": {
+      "created": "2025-08-21",
+      "category": "dev",
+      "description": "徹底的な根本的リファクタリング（妥協なし）"
+    },
+    "dev:remove-excessive-comments": {
+      "created": "2025-10-01",
+      "category": "dev",
+      "description": "対応中ブランチで新規追加された過剰なdocstring/コメントを削除（必要最小限のみ残す）"
+    },
+    "git:clean-branches": {
+      "created": "2025-08-21",
+      "category": "git",
+      "description": "マージ済みブランチの自動削除"
+    },
+    "git:merge-develop": {
+      "created": "2025-11-06",
+      "category": "git",
+      "description": "developの最新をcurrent branchにmerge"
+    },
+    "test:validate-quality": {
+      "created": "2025-09-28",
+      "category": "test",
+      "description": "テストの価値を評価し品質改善を実施（Google Testing Philosophy準拠）"
+    },
+    "issue:create-claude-task": {
+      "created": "2025-09-06",
+      "category": "issue",
+      "description": "claude-todosルールに基づいてタスクを体系的に管理"
+    },
+    "dev:check-diff-structure": {
+      "created": "2025-10-14",
+      "category": "dev",
+      "description": "developとの差分ファイルが適切な場所に配置されているかをチェックし、類似ファイルとの比較で修正"
+    },
+    "dev:create-design-doc": {
+      "created": "2025-01-14",
+      "category": "dev",
+      "description": "指定された画面の設計書を作成し、アカウント権限一覧を更新"
+    },
+    "git:branch-status": {
+      "created": "2025-11-15",
+      "category": "git",
+      "description": "現在のブランチの状況を包括的に把握する"
+    },
+    "git:review-analysis": {
+      "created": "2025-11-15",
+      "category": "git",
+      "description": "PRのレビュー内容を分析して見解をまとめる"
+    },
+    "claude:sync-commands": {
+      "created": "2025-12-07",
+      "category": "claude",
+      "description": "別プロジェクトのcustom commandと比較し、新規追加・更新されたものを同期"
+    },
+    "claude:sync-skills": {
+      "created": "2025-12-07",
+      "category": "claude",
+      "description": "別プロジェクトのスキルと比較し、新規追加・更新されたものを同期"
+    },
+    "claude:show-command-stats": {
+      "created": "2025-12-07",
+      "category": "claude",
+      "description": "カスタムコマンドの使用統計を表示する"
+    },
+    "dev:structure-check": {
+      "created": "2025-12-07",
+      "category": "dev",
+      "description": "ドキュメント記載構造と実際のディレクトリ構造の整合性をチェックし、不整合を修正"
+    },
+    "dev:coding-conventions": {
+      "created": "2025-12-07",
+      "category": "dev",
+      "description": "Frontend/Backendコーディング規約の更新（既存コードパターンから自動検出）"
+    },
+    "git:sync-stacked-branches": {
+      "created": "2025-12-07",
+      "category": "git",
+      "description": "Stacked PR構成のブランチに、developの最新変更を順次マージ・pushする"
+    }
+  },
+  "statistics": {
+    "total_commands": 21,
+    "categories_used": 7,
+    "subdirectory_structure": true
+  }
+}

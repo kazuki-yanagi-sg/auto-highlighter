@@ -9,7 +9,8 @@
 | 🔵 青 | 参照（出典・引用候補） |
 | 🟢 緑 | 具体例（事例） |
 
-- URL を貼ると本文を取り込み、文単位に分割して AI が色を付けます。
+- WEB 記事や **PDF 論文** の URL を貼ると本文を取り込み、文単位に分割して AI が色を付けます。
+  - PDF は pdfminer.six で抽出します（dvipdfmx 製の日本語 PDF も文字化けせず読めます）。
 - ユーザーは正方形の付箋（コメント）を自分で貼れます。
 - マーカー部分は色ごとに VOICEVOX で音声再生できます。
 
@@ -17,7 +18,7 @@
 
 ## 技術スタック
 
-- **バックエンド**: FastAPI / SQLAlchemy / Pydantic / httpx / BeautifulSoup4
+- **バックエンド**: FastAPI / SQLAlchemy / Pydantic / httpx / BeautifulSoup4 / pdfminer.six
 - **AI（注釈）**: Ollama（既定 `phi4`）または Gemini Flash を切り替え可能
 - **音声**: VOICEVOX Engine
 - **フロント**: React + Vite + TypeScript

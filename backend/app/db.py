@@ -5,11 +5,20 @@ SQLite in-memory はテストで使うため StaticPool で1コネクション�
 
 from __future__ import annotations
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.repositories.orm import Base
+
+# create_all は既存テーブルに列を足さないため、後付け列を冪等に追加する軽量マイグレーション。
+# (name, ddl) の ddl は ALTER TABLE ... ADD COLUMN の本体。SQLite/Postgres 両対応。
+_ADDED_COLUMNS: dict[str, list[tuple[str, str]]] = {
+    "segments": [
+        ("block", "block INTEGER NOT NULL DEFAULT 0"),
+        ("kind", "kind VARCHAR(16) NOT NULL DEFAULT 'text'"),
+    ],
+}
 
 
 def _make_engine(url: str):
@@ -35,6 +44,22 @@ class Database:
 
     def create_all(self) -> None:
         Base.metadata.create_all(self.engine)
+        self._add_missing_columns()
+
+    def _add_missing_columns(self) -> None:
+        """既存テーブルに後付け列を冪等に追加する(create_all は列追加しないため)。"""
+        inspector = inspect(self.engine)
+        tables = set(inspector.get_table_names())
+        for table, columns in _ADDED_COLUMNS.items():
+            if table not in tables:
+                continue
+            existing = {c["name"] for c in inspector.get_columns(table)}
+            missing = [(n, ddl) for n, ddl in columns if n not in existing]
+            if not missing:
+                continue
+            with self.engine.begin() as conn:
+                for _, ddl in missing:
+                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {ddl}"))
 
     def session(self) -> Session:
         return self._session_factory()

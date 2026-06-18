@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>Error Log</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
+    .entry { border-left: 4px solid #e74c3c; padding: 1rem 1.2rem; margin: 1rem 0; background: #fff8f8; border-radius: 4px; }
+    .entry.resolved { border-left-color: #27ae60; background: #f0fff4; }
+    .entry.escalated { border-left-color: #f39c12; background: #fff8e7; }
+    .meta { font-size: 0.85em; color: #666; }
+    pre { background: #1e1e1e; color: #d4d4d4; padding: 0.8rem; border-radius: 4px; overflow-x: auto; font-size: 0.85em; }
+    h2 { margin-top: 0; font-size: 1.05em; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.75em; margin-left: 6px; }
+    .badge.fix { background: #d4edda; color: #155724; }
+    .badge.iter { background: #cce5ff; color: #004085; }
+  </style>
+</head>
+<body>
+  <h1>Error Log</h1>
+
+  <div class="entry resolved" data-id="2026-06-18T07:00:00" data-resolved="true">
+    <h2>PDF投稿で HTTP 500（ModuleNotFoundError: pdfminer）<span class="badge iter">iter 1/5</span></h2>
+    <div class="meta">
+      <span>🕒 2026-06-18T07:00:00</span> ·
+      <span>📄 POST /documents (docker backend :8000) / backend/app/services/scraper.py:160</span>
+    </div>
+    <h3>エラー出力</h3>
+    <pre>POST /documents {"url": ".../Lie-algebra.pdf"} -> Internal Server Error / HTTP 500
+docker compose exec backend python -c "import pdfminer"
+  ModuleNotFoundError: No module named 'pdfminer'</pre>
+    <h3>原因解析</h3>
+    <p>docker-compose は <code>./backend:/app</code> をボリュームマウントし <code>--reload</code> で起動するため、
+    コンテナ内では最新コード(pdfminer を import する PDF 対応)が動く。一方コンテナ<strong>イメージ</strong>は
+    7日前ビルドで pdfminer.six 未インストール。PDF を投げると scraper.py:160 の
+    <code>from app.services.pdf import extract_pdf_content</code> → <code>import pdfminer</code> で
+    ModuleNotFoundError。さらに router (documents.py:84) は <code>ScrapeError</code> しか捕捉しないため、
+    それ以外の例外が素通りして生の 500 になっていた。</p>
+    <h3>適用した修正</h3>
+    <pre>1) scraper.py: PDF 抽出を try/except で包み、ScrapeError 以外の例外も
+   ScrapeError に変換 → ユーザーには 502 + 分かるメッセージ(原因不明の500を排除)。
+2) docker イメージを再ビルドして pdfminer.six を導入:
+   docker compose build backend && docker compose up -d backend</pre>
+    <h3>結果</h3>
+    <p>再ビルド後 <code>POST /documents</code> → HTTP 202、195文を正しい日本語で取得。文字化けも解消。</p>
+  </div>
+
+  <div class="entry resolved" data-id="2026-06-18T07:30:00" data-resolved="true">
+    <h2>本文レンダリングが稀に崩れる(snake_case を数式と誤検出)<span class="badge iter">iter 1/5</span></h2>
+    <div class="meta">
+      <span>🕒 2026-06-18T07:30:00</span> ·
+      <span>📄 frontend/src/math.tsx (renderPlain / matchDelim)</span>
+    </div>
+    <h3>エラー出力</h3>
+    <pre>KaTeX 警告: "Unicode text character "で" used in math mode [unicodeTextInMathMode]"
+再現入力(実記事セグメント):
+  "スコープはread_qiitaとwrite_qiitaを選択"
+  "コアテーブル: horses, race_entries, race_results"
+  "価格は $5 で、別の $10 もある。"
+→ read_qiita / race_entries / $...$ 内の日本語が KaTeX math mode で描画され表示が崩れる。</pre>
+    <h3>原因解析</h3>
+    <p>renderPlain の数式判定が <code>MATH_SIGNAL = /[\\^_]/</code> で、区切りの無い地の文でも
+    <code>_</code>・<code>^</code> を含む非日本語塊を数式とみなしていた。技術記事の snake_case 識別子
+    (read_qiita 等)に誤ヒットし KaTeX 描画 → 崩れ。記事ごとに有無が変わるため「たまに」発生。
+    加えて matchDelim が地の文中の単独 <code>$</code> を区切りと誤認し、間の日本語を数式に飲み込んでいた。</p>
+    <h3>適用した修正</h3>
+    <pre>1) MATH_SIGNAL を /\\/ に厳格化(バックスラッシュ=LaTeXコマンドがある時だけ数式)。
+   _ / ^ 単独では数式化しない → snake_case・添字記法・パスを誤描画しない。
+2) matchDelim: 区切りの中身に日本語(JP)を含む場合は数式扱いしない($ 誤検出を防止)。
+3) renderSegmentHtml を try/catch で包み、想定外入力でも素テキストに退避(本文全体を巻き込まない)。
+   回帰テスト: src/tests/render_robustness.test.ts(実記事セグメント+意地悪入力で検証)。</pre>
+    <h3>結果</h3>
+    <p><code>npm test</code> → 55 passed / <code>tsc --noEmit</code> OK。<code>\eta</code>・<code>$E=mc^2$</code> の正規数式は従来どおり描画、snake_case は地の文として表示。</p>
+  </div>
+
+  <div class="entry resolved" data-id="2026-06-18T07:55:00" data-resolved="true">
+    <h2>PDFの行列が大きな余白で分断され表示が壊れる<span class="badge iter">iter 1/5</span></h2>
+    <div class="meta">
+      <span>🕒 2026-06-18T07:55:00</span> ·
+      <span>📄 backend/app/services/pdf.py (_paragraphs) + frontend/src/components/HighlightedText.tsx</span>
+    </div>
+    <h3>エラー出力</h3>
+    <pre>スクリーンショット: 式(6.3)の行列が
+  f : g → gl2(R) : aA + bX →
+  b a            ← 余白
+  0 −a           ← 余白
+  (6.3)
+と各行が大きな段落余白で分断され、壊れて見える。</pre>
+    <h3>原因解析</h3>
+    <p>PDFのテキスト層には行列・分数の2次元配置情報が無く、pdfminer は各行をバラして抽出する。
+    旧 _paragraphs は数式行を1行ずつ別ブロックにしていたため、各行が別 <code>.para</code> となり
+    段落余白(0.9em)で分断 → 壊れて見えた。</p>
+    <h3>適用した修正</h3>
+    <pre>1) pdf.py _paragraphs: 日本語を含まない行(短い or 数式記号を含む)を「数式行」とみなし、
+   連続するものを改行付きで1ブロックにまとめる(行列が1つの固まりになる)。英文地の文は誤巻込しない。
+2) HighlightedText: 日本語を含まない文を seg-display(block表示)にして1行ずつ縦に詰めて並べる。
+   同 block は1つの .para にまとまるため、行間は詰まり段落余白で分断されない。
+備考: PDFからの行列・分数の2次元完全復元は原理的に不可(要 数式OCR)。本対応は崩れ表示の解消まで。</pre>
+    <h3>結果</h3>
+    <p>再POST後、行列ブロックが1段落に縦並びでまとまることを API とスクリーンショットで確認。
+    backend 121 passed / frontend 55 passed。</p>
+  </div>
+
+  <div class="entry resolved" data-id="2026-06-18T08:20:00" data-resolved="true">
+    <h2>本文にページ付帯物(ページ番号/ランニングヘッダ/脚注)が混入<span class="badge iter">iter 1/5</span></h2>
+    <div class="meta">
+      <span>🕒 2026-06-18T08:20:00</span> ·
+      <span>📄 backend/app/services/pdf.py (_paragraphs / extract_pdf_content)</span>
+    </div>
+    <h3>エラー出力</h3>
+    <pre>スクリーンショット: 本文の途中に意味不明な文字列
+  "*1 Lie algebra *2 real Lie algebra *3 complex Lie algebra *4 bracket product ..."
+さらに "45/46/47..." のページ番号、"6.2 リー代数の例" 等のランニングヘッダが各ページ分重複混入。</pre>
+    <h3>原因解析</h3>
+    <p>PDF の読み取り順は、ページ下部の脚注・ノンブル・ページ上部のランニングヘッダといった
+    「ページ付帯物」を本文に混ぜ込む。これらが段落として本文中に出現し読みを阻害していた。
+    本文の脚注マーカー(例 "リー代数*1" = 後ろが日本語)と、脚注定義("*1 Lie algebra" = 後ろが英語)
+    は形が異なる点を利用して区別できる。</p>
+    <h3>適用した修正</h3>
+    <pre>pdf.py:
+  1) 脚注定義 /\*\d+\s+[A-Za-z].../ を各行から除去(本文の "リー代数*1" は後ろが日本語なので残る)。
+  2) ノンブル(^\d{1,4}$ のみの行)を破棄。
+  3) ランニングヘッダ(第N章/ N.N で始まる短い見出し)の繰り返しは最初の1回だけ残しdedup。
+     "証明." 等の繰り返し本文は dedup 対象外(見出しパターンに限定)。
+回帰テスト: test_pdf.py に脚注/ノンブル/ヘッダdedup の各ケースを追加。</pre>
+    <h3>結果</h3>
+    <p>実PDF再抽出でノイズ0(ブロック126→96)。スクリーンショットで 6.2 節がクリーン表示なのを確認。
+    backend 125 passed。</p>
+  </div>
+
+  <div class="entry resolved" data-id="2026-06-18T08:55:00" data-resolved="true">
+    <h2>行列の各行が大きな縦の隙間でスカスカに表示される<span class="badge iter">iter 1/5</span></h2>
+    <div class="meta">
+      <span>🕒 2026-06-18T08:55:00</span> ·
+      <span>📄 frontend/src/components/HighlightedText.tsx + index.css</span>
+    </div>
+    <h3>エラー出力</h3>
+    <pre>スクリーンショット: 式(6.3)の行列が
+  f : g → gl2(R) : aA + bX →
+  b          ← 大きな隙間
+  a          ← 大きな隙間
+  0 −a
+  (6.3)
+と各行が離れてスカスカ。行列は1ブロックに集約済み(block 51)だが見た目が崩れている。</pre>
+    <h3>原因解析</h3>
+    <p>数式行を block 表示(seg-display)にしたが、<code>.reader-text { line-height: 2 }</code> が
+    単独文字の block 行にも効き、1行が約2文字分の高さになって縦に間延び。行間がスカスカに見えた。</p>
+    <h3>適用した修正</h3>
+    <pre>HighlightedText: 段落全体が日本語を含まない場合 .para-math(数式ブロック)とし、
+  各行は .seg-line(display:block, line-height:1.5)で詰めて縦並びにする。
+index.css: .para-math に淡い背景+左罫線で「式の塊」と分かる体裁。.seg-line で行間を詰める。
+回帰テスト: HighlightedText.test.tsx を .para-math / .seg-line 検証に更新。</pre>
+    <h3>結果</h3>
+    <p>プレビュー再生成→スクリーンショットで、行列が詰まった数式ブロックとして表示されるのを確認。
+    frontend 56 passed / tsc OK。(注: 行列の2次元復元は原理的に不可。崩れ見えの解消まで。)</p>
+  </div>
+
+  <div class="entry resolved" data-id="2026-06-18T09:30:00" data-resolved="true">
+    <h2>行列が2次元で描画されない(縦割りのまま)<span class="badge iter">iter 1/5</span></h2>
+    <div class="meta">
+      <span>🕒 2026-06-18T09:30:00</span> ·
+      <span>📄 backend/app/services/pdf.py (座標再構成)</span>
+    </div>
+    <h3>エラー出力</h3>
+    <pre>式(6.3)の行列が b / a / 0 −a と縦割りのまま。本来は ( a b ; 0 −a ) の2x2行列。
+ユーザー選択: 座標解析で自前再構成。</pre>
+    <h3>原因解析</h3>
+    <p>テキスト抽出(extract_text)は2次元配置を1次元化するため行列が縦に割れる。
+    pdfminer のレイアウト座標(x,y)を使えば、行=y・列=x でグリッドを復元できる。</p>
+    <h3>適用した修正</h3>
+    <pre>pdf.py を extract_pages(座標つき)ベースに変更:
+  1) セル候補(短い・日本語/関係記号なし・本文余白内)を union-find で近接クラスタ化。
+  2) 行=y, 列=x でグリッド化。各行のセル数が揃う2列以上のみ pmatrix 化(不整合は不採用=誤検出回避)。
+  3) $$\begin{pmatrix}..\end{pmatrix}$$ に置換 → フロントの既存KaTeXが2次元描画。
+  4) 読み順は視覚行(yが近い断片)でまとめ左→右に整列(リード→行列→式番号)。
+回帰テスト: test_matrix_reconstructed_from_coordinates / test_inconsistent_rows_not_treated_as_matrix。</pre>
+    <h3>結果</h3>
+    <p>実PDFで (6.3)→pmatrix[a,b;0,-a], (6.9)→2行列 を再構成。KaTeXで2x2行列として描画されるのを
+    スクリーンショットで確認。backend 127 passed / frontend 56 passed。</p>
+  </div>
+
+</body>
+</html>

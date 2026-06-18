@@ -100,14 +100,14 @@ export function LibraryPage({ onOpen, onSubmitUrl, loading, error, api = default
         <span className="brand-sub">Marker</span>
       </header>
       <p className="lead">
-        URLを貼ると本文を取り込み、<b>4色のマーカー</b>
+        WEB記事や<b>PDF論文</b>のURLを貼ると本文を取り込み、<b>4色のマーカー</b>
         を引きながら読むためのリーダー。
       </p>
 
       <form className="urlbar" onSubmit={submitUrl}>
         <div className="urlbar-field">
           <span aria-hidden>🔗</span>
-          <input type="url" placeholder="記事のURLを貼り付け… 例) https://en.wikipedia.org/..." value={urlDraft} onChange={(e) => setUrlDraft(e.target.value)} />
+          <input type="url" placeholder="記事のURLやPDFを貼り付け… 例) https://…/paper.pdf" value={urlDraft} onChange={(e) => setUrlDraft(e.target.value)} />
         </div>
         <button className="btn-accent" type="submit" disabled={loading}>
           {loading ? "解析中…" : "解析する"}

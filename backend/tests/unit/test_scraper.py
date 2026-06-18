@@ -8,6 +8,7 @@ import httpx
 import pytest
 
 from app.services.scraper import HttpScraper, ScrapeError, extract_content
+from tests.unit.test_pdf import make_pdf
 
 _HTML = """
 <html>
@@ -119,17 +120,82 @@ def test_fetch_raises_on_connection_error_with_cause_in_message():
     assert "ConnectError" in str(excinfo.value)
 
 
-def test_fetch_rejects_non_html_content_type():
-    # PDF/画像等のバイナリを text として処理すると NUL 混入でDB保存が壊れ500になる。
-    # HTML 以外は取得段階で明示的に弾き、分かるメッセージで知らせる。
+def test_fetch_rejects_non_html_non_pdf_binary():
+    # 画像等のバイナリを text として処理すると NUL 混入でDB保存が壊れ500になる。
+    # HTML/テキスト/PDF 以外は取得段階で明示的に弾き、分かるメッセージで知らせる。
     def handler(req):
         return httpx.Response(
             200,
-            content=b"%PDF-1.5\x00binary",
-            headers={"content-type": "application/pdf"},
+            content=b"\x89PNG\x00binary",
+            headers={"content-type": "image/png"},
         )
 
     scraper = _scraper_with_handler(handler)
     with pytest.raises(ScrapeError) as excinfo:
-        scraper.fetch("https://example.com/paper.pdf")
-    assert "application/pdf" in str(excinfo.value)
+        scraper.fetch("https://example.com/photo.png")
+    assert "image/png" in str(excinfo.value)
+
+
+def test_fetch_extracts_pdf_when_content_type_is_pdf():
+    # PDF は拒否せず本文抽出する(application/pdf)。
+    data = make_pdf([["Hello from a PDF."]], title="PDF Title")
+
+    def handler(req):
+        return httpx.Response(
+            200, content=data, headers={"content-type": "application/pdf"}
+        )
+
+    scraper = _scraper_with_handler(handler)
+    content = scraper.fetch("https://example.com/paper.pdf")
+    assert content.title == "PDF Title"
+    assert "Hello from a PDF." in content.text
+
+
+def test_fetch_extracts_pdf_by_url_suffix_when_content_type_generic():
+    # サーバが octet-stream を返しても、URL が .pdf なら PDF として扱う。
+    data = make_pdf([["Body of the document."]])
+
+    def handler(req):
+        return httpx.Response(
+            200,
+            content=data,
+            headers={"content-type": "application/octet-stream"},
+        )
+
+    scraper = _scraper_with_handler(handler)
+    content = scraper.fetch("https://example.com/files/doc.pdf")
+    assert "Body of the document." in content.text
+
+
+def test_fetch_wraps_broken_pdf_as_scrape_error():
+    # 壊れたPDF/解析失敗は原因不明の500ではなく ScrapeError にして伝える。
+    def handler(req):
+        return httpx.Response(
+            200,
+            content=b"%PDF-1.4 not really a pdf",
+            headers={"content-type": "application/pdf"},
+        )
+
+    scraper = _scraper_with_handler(handler)
+    with pytest.raises(ScrapeError):
+        scraper.fetch("https://example.com/broken.pdf")
+
+
+_HTML_CODE = """
+<html><head><title>コード記事</title></head><body><article>
+<p>本文の説明です。</p>
+<div class="code-frame"><pre><code>def foo():
+    return 1</code></pre></div>
+</article></body></html>
+"""
+
+
+def test_extract_content_keeps_code_block_verbatim():
+    # <pre> のコードは改行・字下げを保ったまま kind="code" で取り込む。
+    content = extract_content(_HTML_CODE)
+    codes = [b for b in content.blocks if b.kind == "code"]
+    assert len(codes) == 1
+    assert "def foo():" in codes[0].text
+    assert "\n    return 1" in codes[0].text  # 改行と字下げが残る
+    # 地の文は従来どおり取れる。
+    assert any(b.kind == "text" and "本文の説明" in b.text for b in content.blocks)

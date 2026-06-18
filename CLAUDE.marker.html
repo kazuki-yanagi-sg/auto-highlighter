@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CLAUDE.md — マーカー支援アプリ 開発規約 — マーカー</title>
+<style>
+  :root {
+    --paper: #f7eedd;
+    --paper-2: #fcf6ea;
+    --paper-edge: #eadfc8;
+    --paper-ink: #2c2419;
+    --paper-line: rgba(64, 50, 32, 0.13);
+    --mk-red: #ff5c57;
+    --mk-yellow: #ffc83d;
+    --mk-blue: #4d9bff;
+    --mk-green: #34d399;
+    --mk-opacity: 0.42;
+    --reading-size: 20px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #e7dcc4;
+    color: var(--paper-ink);
+    font-family: "Hiragino Sans", "Yu Gothic", "Noto Sans JP", system-ui, sans-serif;
+    line-height: 1.9;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 32px 20px 96px; }
+  h1 { font-size: 24px; margin: 0 0 6px; }
+  .sub { color: rgba(44, 36, 25, 0.6); font-size: 13px; margin-bottom: 20px; }
+
+  /* 凡例 */
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 18px; }
+  .legend-item {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--paper-2); border: 1px solid var(--paper-line);
+    border-radius: 999px; padding: 6px 12px; font-size: 13px;
+  }
+  .legend-item .dot { width: 12px; height: 12px; border-radius: 3px; }
+
+  /* 音声プレイヤー */
+  .voice { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 24px; }
+  .voice-btn {
+    border: 1px solid var(--paper-line); background: var(--paper-2);
+    color: var(--paper-ink); border-radius: 999px; padding: 8px 14px;
+    font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 7px;
+  }
+  .voice-btn::before { content: ""; width: 10px; height: 10px; border-radius: 3px; }
+  .voice-btn[data-color="red"]::before { background: var(--mk-red); }
+  .voice-btn[data-color="yellow"]::before { background: var(--mk-yellow); }
+  .voice-btn[data-color="blue"]::before { background: var(--mk-blue); }
+  .voice-btn[data-color="green"]::before { background: var(--mk-green); }
+  .voice-btn[data-color="stop"]::before { display: none; }
+  .voice-btn:hover { filter: brightness(0.97); }
+  .voice-btn.playing { outline: 2px solid var(--mk-red); }
+
+  /* 本文(紙) */
+  .paper {
+    background: linear-gradient(var(--paper-2), var(--paper));
+    border: 1px solid var(--paper-edge);
+    border-radius: 14px; padding: 36px 34px;
+    box-shadow: 0 24px 60px -32px rgba(0, 0, 0, 0.35);
+    font-size: var(--reading-size);
+  }
+  .paper p { margin: 0 0 1.1em; }
+
+  /* マーカー(半透明蛍光ペン) */
+  .mk {
+    border-radius: 2px; padding: 0.04em 0.12em; margin: 0 -0.04em;
+    box-decoration-break: clone; -webkit-box-decoration-break: clone;
+    opacity: var(--mk-opacity); transition: filter 0.15s ease;
+  }
+  .mk:hover { filter: saturate(1.25) brightness(1.03); }
+  .mk-red { background: var(--mk-red); box-shadow: inset 0 -0.12em 0 rgba(229, 65, 59, 0.55); }
+  .mk-yellow { background: var(--mk-yellow); box-shadow: inset 0 -0.12em 0 rgba(217, 154, 0, 0.5); }
+  .mk-blue { background: var(--mk-blue); box-shadow: inset 0 -0.12em 0 rgba(46, 123, 224, 0.5); }
+  .mk-green { background: var(--mk-green); box-shadow: inset 0 -0.12em 0 rgba(20, 160, 109, 0.5); }
+
+  /* 理由の付箋(なぜこの色を引いたか = ナレッジ) */
+  .note {
+    display: inline-block;
+    vertical-align: middle;
+    font-size: 12.5px;
+    line-height: 1.5;
+    margin: 0 4px;
+    padding: 5px 9px;
+    border-radius: 4px;
+    border-left: 4px solid var(--paper-line);
+    background: #fff9c4;
+    color: #3a3320;
+    box-shadow: 1px 2px 6px rgba(0, 0, 0, 0.16);
+    transform: rotate(-0.8deg);
+    max-width: 260px;
+    white-space: normal;
+  }
+  .note::before { content: "📌 "; }
+  .note-red { border-left-color: var(--mk-red); background: #ffe3e1; }
+  .note-yellow { border-left-color: var(--mk-yellow); background: #fff3c9; }
+  .note-blue { border-left-color: var(--mk-blue); background: #e1edff; }
+  .note-green { border-left-color: var(--mk-green); background: #d9f5e9; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>CLAUDE.md — マーカー支援アプリ 開発規約</h1>
+    <div class="sub">AIが4色マーカーで「読む補助線」を引いています。原文は要約していません。</div>
+
+    <div class="legend">
+      <span class="legend-item"><span class="dot" style="background:var(--mk-red)"></span>重要 — 主張の核</span>
+      <span class="legend-item"><span class="dot" style="background:var(--mk-yellow)"></span>注意 — なぜ?・根拠が薄い</span>
+      <span class="legend-item"><span class="dot" style="background:var(--mk-blue)"></span>参照 — 出典・引用</span>
+      <span class="legend-item"><span class="dot" style="background:var(--mk-green)"></span>具体例 — 事例</span>
+    </div>
+
+    <div class="voice">
+      <button class="voice-btn" data-color="red">重要を読む</button>
+      <button class="voice-btn" data-color="yellow">注意を読む</button>
+      <button class="voice-btn" data-color="blue">参照を読む</button>
+      <button class="voice-btn" data-color="green">具体例を読む</button>
+      <button class="voice-btn" data-color="stop">■ 停止</button>
+    </div>
+
+    <div class="paper" id="paper"></div>
+  </div>
+
+<script>
+  // segment_id 順に並ぶ文配列。color は red|yellow|blue|green|null(マーカーなし)。
+  // reason はこの色を引いた理由(日本語)。color が付く文には必ず入れる。
+  // paragraph_break が true の文の前で段落を改める。
+  const SEGMENTS = [
+  {
+    "text": "CLAUDE.md — マーカー支援アプリ 開発規約",
+    "color": null,
+    "paragraph_break": true
+  },
+  {
+    "text": "このリポジトリで作業するすべてのエージェント / 開発者が従う規約。",
+    "color": null,
+    "paragraph_break": true
+  },
+  {
+    "text": "プロダクト概要",
+    "color": null,
+    "paragraph_break": true
+  },
+  {
+    "text": "時間がない中で長文のWEB記事/論文を読むためのツール。",
+    "color": null,
+    "paragraph_break": true
+  },
+  {
+    "text": "要約はしない。",
+    "color": "red",
+    "reason": "このツールの最重要制約。要約せず原文を保つ"
+  },
+  {
+    "text": "原文を残したまま、AIが4色マーカーで「読む補助線」だけを引く。",
+    "color": "red",
+    "reason": "プロダクトの主目的＝補助線を引く手法そのもの"
+  },
+  {
+    "text": "🔴 赤 = 重要（主張の核）",
+    "color": null,
+    "paragraph_break": true
+  },
+  {
+    "text": "🟡 黄 = 注意（なぜ?・根拠が薄い・要検証）",
+    "color": null
+  },
+  {
+    "text": "🔵 青 = 参照（出典・引用候補）",
+    "color": null
+  },
+  {
+    "text": "🟢 緑 = 具体例（事例）",
+    "color": null
+  },
+  {
+    "text": "ユーザーは正方形付箋（コメント）を 自分で 貼る。",
+    "color": null,
+    "paragraph_break": true
+  },
+  {
+    "text": "マーカー部分は色ごとにVOICEVOXで音声再生できる。",
+    "color": null
+  },
+  {
+    "text": "応答",
+    "color": null,
+    "paragraph_break": true
+  },
+  {
+    "text": "ユーザーへの応答は 日本語。",
+    "color": "red",
+    "reason": "応答は日本語、という明確な規約",
+    "paragraph_break": true
+  },
+  {
+    "text": "開発フロー（厳守）",
+    "color": null,
+    "paragraph_break": true
+  },
+  {
+    "text": "planningを必ず行う。",
+    "color": "red",
+    "reason": "開発フローの必須事項: 計画を必ず行う",
+    "paragraph_break": true
+  },
+  {
+    "text": "非自明なタスクはplan modeで計画→承認を得てから着手。",
+    "color": null
+  },
+  {
+    "text": "TDD必須。",
+    "color": "red",
+    "reason": "テスト駆動が必須という核ルール"
+  },
+  {
+    "text": "実装前に必ず失敗するテストを書く（Red → Green → Refactor）。",
+    "color": null
+  },
+  {
+    "text": "テストを後回しにしない。",
+    "color": "yellow",
+    "reason": "テストを後回しにするなという注意"
+  },
+  {
+    "text": "ネストを浅く保つ。",
+    "color": null
+  },
+  {
+    "text": "早期return・ガード節を使い、3段以上のネストは原則禁止。",
+    "color": "yellow",
+    "reason": "3段以上のネストは原則禁止という制約"
+  },
+  {
+    "text": "SOLID原則に従う。",
+    "color": null
+  },
+  {
+    "text": "SOLIDの適用方針",
+    "color": null,
+    "paragraph_break": true
+  },
+  {
+    "text": "SRP: 1クラス/1モジュール1責務。",
+    "color": null,
+    "paragraph_break": true
+  },
+  {
+    "text": "スクレイピング・解析・TTS・永続化は別々のサービスに分ける。",
+    "color": null
+  },
+  {
+    "text": "OCP: 新しいScraper/Annotator/TTS実装は既存コードを変えずに「追加」で対応（ABCを継承）。",
+    "color": null
+  },
+  {
+    "text": "LSP: 同一インターフェースの実装は差し替え可能に保つ（フェイク実装でテスト）。",
+    "color": null
+  },
+  {
+    "text": "ISP: リポジトリ/サービスのインターフェースは用途ごとに小さく。",
+    "color": null
+  },
+  {
+    "text": "DIP: routerやサービスは 抽象（ABC）に依存 し、具象はFastAPIのDependsで注入する。",
+    "color": null
+  },
+  {
+    "text": "外部I/O（Gemini / HTTP / VOICEVOX / DB）は必ず抽象越しに呼ぶ。",
+    "color": null
+  },
+  {
+    "text": "アーキテクチャ（依存方向）",
+    "color": null,
+    "paragraph_break": true
+  },
+  {
+    "text": "domain → repositories → services → api",
+    "color": "red",
+    "reason": "アーキテクチャの依存方向の核",
+    "paragraph_break": true
+  },
+  {
+    "text": "domain/ : 純粋なエンティティ。",
+    "color": null,
+    "paragraph_break": true
+  },
+  {
+    "text": "外部依存ゼロ。",
+    "color": null
+  },
+  {
+    "text": "repositories/: 永続化の抽象 + SQLAlchemy実装。",
+    "color": null
+  },
+  {
+    "text": "services/ : scraper / segmenter / annotator / tts。",
+    "color": null
+  },
+  {
+    "text": "abstract + 具象。",
+    "color": null
+  },
+  {
+    "text": "api/ : 薄いrouter。",
+    "color": null
+  },
+  {
+    "text": "deps.pyでDI。",
+    "color": null
+  },
+  {
+    "text": "マーカー→本文のマッピングは 文単位に採番（segment_id） して行う。",
+    "color": "red",
+    "reason": "マッピングは文単位採番という設計の核決定",
+    "paragraph_break": true
+  },
+  {
+    "text": "文字オフセットやAIの引用文字列に依存しない。",
+    "color": "yellow",
+    "reason": "文字オフセットや引用文字列に依存するなという注意"
+  },
+  {
+    "text": "技術スタック",
+    "color": null,
+    "paragraph_break": true
+  },
+  {
+    "text": "バックエンド: FastAPI / SQLAlchemy / Pydantic / httpx / BeautifulSoup4 / google-generativeai",
+    "color": null,
+    "paragraph_break": true
+  },
+  {
+    "text": "AI: Gemini Flash（response_mime_type=application/json でJSON強制）",
+    "color": "green",
+    "reason": "具体的なAI構成: Gemini FlashでJSONを強制"
+  },
+  {
+    "text": "音声: VOICEVOX Engine（docker-compose内サービス）",
+    "color": null
+  },
+  {
+    "text": "フロント: React + Vite + TypeScript",
+    "color": null
+  },
+  {
+    "text": "DB: PostgreSQL（本番） / SQLite in-memory（テスト）",
+    "color": "green",
+    "reason": "DBの具体構成: 本番Postgres・テストはSQLite"
+  },
+  {
+    "text": "実行環境: docker-compose",
+    "color": null
+  },
+  {
+    "text": "テスト",
+    "color": null,
+    "paragraph_break": true
+  },
+  {
+    "text": "backend: pytest。",
+    "color": null,
+    "paragraph_break": true
+  },
+  {
+    "text": "外部I/Oはフェイク実装を注入。",
+    "color": null
+  },
+  {
+    "text": "DBはSQLite in-memory。",
+    "color": null
+  },
+  {
+    "text": "実行: docker compose exec backend pytest または cd backend && pytest",
+    "color": "green",
+    "reason": "backendテストの具体的な実行コマンド"
+  },
+  {
+    "text": "frontend: Vitest + @testing-library/react + msw（APIモック）。",
+    "color": null
+  },
+  {
+    "text": "実行: docker compose exec frontend npm test または cd frontend && npm test",
+    "color": "green",
+    "reason": "frontendテストの具体的な実行コマンド"
+  },
+  {
+    "text": "秘密情報",
+    "color": null,
+    "paragraph_break": true
+  },
+  {
+    "text": "GEMINI_API_KEY などは .env に置きコミットしない（.env.example をテンプレとして用意）。",
+    "color": "yellow",
+    "reason": "APIキーは.envに置きコミットしないという秘密情報の注意",
+    "paragraph_break": true
+  }
+];
+
+  const CLASS = { red: "mk mk-red", yellow: "mk mk-yellow", blue: "mk mk-blue", green: "mk mk-green" };
+
+  function render() {
+    const paper = document.getElementById("paper");
+    let p = document.createElement("p");
+    paper.appendChild(p);
+    SEGMENTS.forEach((seg, i) => {
+      if (seg.paragraph_break && p.childNodes.length) {
+        p = document.createElement("p");
+        paper.appendChild(p);
+      }
+      const node = seg.color ? document.createElement("span") : document.createTextNode(seg.text);
+      if (seg.color) {
+        node.className = CLASS[seg.color] || "";
+        node.textContent = seg.text;
+      }
+      p.appendChild(node);
+      if (seg.color && seg.reason) {
+        const note = document.createElement("span");
+        note.className = "note note-" + seg.color;
+        note.textContent = seg.reason;
+        p.appendChild(note);
+      }
+    });
+  }
+
+  function speak(color) {
+    window.speechSynthesis.cancel();
+    const text = SEGMENTS.filter((s) => s.color === color).map((s) => s.text).join(" ");
+    if (!text) return;
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "ja-JP";
+    window.speechSynthesis.speak(u);
+  }
+
+  document.querySelectorAll(".voice-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const color = btn.dataset.color;
+      if (color === "stop") { window.speechSynthesis.cancel(); return; }
+      speak(color);
+    });
+  });
+
+  render();
+</script>
+</body>
+</html>

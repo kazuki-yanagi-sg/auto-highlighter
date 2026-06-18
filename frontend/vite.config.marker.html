@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>vite.config.ts — マーカー</title>
+<style>
+  :root {
+    --paper: #f7eedd;
+    --paper-2: #fcf6ea;
+    --paper-edge: #eadfc8;
+    --paper-ink: #2c2419;
+    --paper-line: rgba(64, 50, 32, 0.13);
+    --mk-red: #ff5c57;
+    --mk-yellow: #ffc83d;
+    --mk-blue: #4d9bff;
+    --mk-green: #34d399;
+    --mk-opacity: 0.42;
+    --reading-size: 20px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #e7dcc4;
+    color: var(--paper-ink);
+    font-family: "Hiragino Sans", "Yu Gothic", "Noto Sans JP", system-ui, sans-serif;
+    line-height: 1.9;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 32px 20px 96px; }
+  h1 { font-size: 24px; margin: 0 0 6px; }
+  .sub { color: rgba(44, 36, 25, 0.6); font-size: 13px; margin-bottom: 20px; }
+
+  /* 凡例 */
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 18px; }
+  .legend-item {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--paper-2); border: 1px solid var(--paper-line);
+    border-radius: 999px; padding: 6px 12px; font-size: 13px;
+  }
+  .legend-item .dot { width: 12px; height: 12px; border-radius: 3px; }
+
+  /* 音声プレイヤー */
+  .voice { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 24px; }
+  .voice-btn {
+    border: 1px solid var(--paper-line); background: var(--paper-2);
+    color: var(--paper-ink); border-radius: 999px; padding: 8px 14px;
+    font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 7px;
+  }
+  .voice-btn::before { content: ""; width: 10px; height: 10px; border-radius: 3px; }
+  .voice-btn[data-color="red"]::before { background: var(--mk-red); }
+  .voice-btn[data-color="yellow"]::before { background: var(--mk-yellow); }
+  .voice-btn[data-color="blue"]::before { background: var(--mk-blue); }
+  .voice-btn[data-color="green"]::before { background: var(--mk-green); }
+  .voice-btn[data-color="stop"]::before { display: none; }
+  .voice-btn:hover { filter: brightness(0.97); }
+  .voice-btn.playing { outline: 2px solid var(--mk-red); }
+
+  /* 本文(紙) */
+  .paper {
+    background: linear-gradient(var(--paper-2), var(--paper));
+    border: 1px solid var(--paper-edge);
+    border-radius: 14px; padding: 36px 34px;
+    box-shadow: 0 24px 60px -32px rgba(0, 0, 0, 0.35);
+    font-size: var(--reading-size);
+  }
+  .paper p { margin: 0 0 1.1em; }
+
+  /* マーカー(半透明蛍光ペン) */
+  .mk {
+    border-radius: 2px; padding: 0.04em 0.12em; margin: 0 -0.04em;
+    box-decoration-break: clone; -webkit-box-decoration-break: clone;
+    opacity: var(--mk-opacity); transition: filter 0.15s ease;
+  }
+  .mk:hover { filter: saturate(1.25) brightness(1.03); }
+  .mk-red { background: var(--mk-red); box-shadow: inset 0 -0.12em 0 rgba(229, 65, 59, 0.55); }
+  .mk-yellow { background: var(--mk-yellow); box-shadow: inset 0 -0.12em 0 rgba(217, 154, 0, 0.5); }
+  .mk-blue { background: var(--mk-blue); box-shadow: inset 0 -0.12em 0 rgba(46, 123, 224, 0.5); }
+  .mk-green { background: var(--mk-green); box-shadow: inset 0 -0.12em 0 rgba(20, 160, 109, 0.5); }
+
+  /* 理由の付箋(なぜこの色を引いたか = ナレッジ) */
+  .note {
+    display: inline-block;
+    vertical-align: middle;
+    font-size: 12.5px;
+    line-height: 1.5;
+    margin: 0 4px;
+    padding: 5px 9px;
+    border-radius: 4px;
+    border-left: 4px solid var(--paper-line);
+    background: #fff9c4;
+    color: #3a3320;
+    box-shadow: 1px 2px 6px rgba(0, 0, 0, 0.16);
+    transform: rotate(-0.8deg);
+    max-width: 260px;
+    white-space: normal;
+  }
+  .note::before { content: "📌 "; }
+  .note-red { border-left-color: var(--mk-red); background: #ffe3e1; }
+  .note-yellow { border-left-color: var(--mk-yellow); background: #fff3c9; }
+  .note-blue { border-left-color: var(--mk-blue); background: #e1edff; }
+  .note-green { border-left-color: var(--mk-green); background: #d9f5e9; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>vite.config.ts</h1>
+    <div class="sub">AIが4色マーカーで「読む補助線」を引いています。原文は要約していません。</div>
+
+    <div class="legend">
+      <span class="legend-item"><span class="dot" style="background:var(--mk-red)"></span>重要 — 主張の核</span>
+      <span class="legend-item"><span class="dot" style="background:var(--mk-yellow)"></span>注意 — なぜ?・根拠が薄い</span>
+      <span class="legend-item"><span class="dot" style="background:var(--mk-blue)"></span>参照 — 出典・引用</span>
+      <span class="legend-item"><span class="dot" style="background:var(--mk-green)"></span>具体例 — 事例</span>
+    </div>
+
+    <div class="voice">
+      <button class="voice-btn" data-color="red">重要を読む</button>
+      <button class="voice-btn" data-color="yellow">注意を読む</button>
+      <button class="voice-btn" data-color="blue">参照を読む</button>
+      <button class="voice-btn" data-color="green">具体例を読む</button>
+      <button class="voice-btn" data-color="stop">■ 停止</button>
+    </div>
+
+    <div class="paper" id="paper"></div>
+  </div>
+
+<script>
+  // segment_id 順に並ぶ文配列。color は red|yellow|blue|green|null(マーカーなし)。
+  // reason はこの色を引いた理由(日本語)。color が付く文には必ず入れる。
+  // paragraph_break が true の文の前で段落を改める。
+  const SEGMENTS = [
+  {
+    "text": "/// <reference types=\"vitest\" />",
+    "color": null,
+    "paragraph_break": true
+  },
+  {
+    "text": "import { defineConfig } from \"vite\";",
+    "color": null
+  },
+  {
+    "text": "import react from \"@vitejs/plugin-react\";",
+    "color": null
+  },
+  {
+    "text": "export default defineConfig({",
+    "color": null,
+    "paragraph_break": true
+  },
+  {
+    "text": "plugins: [react()],",
+    "color": "red",
+    "reason": "Reactプラグインを有効化。このViteビルドの主目的の核"
+  },
+  {
+    "text": "server: {",
+    "color": null
+  },
+  {
+    "text": "host: true,",
+    "color": null
+  },
+  {
+    "text": "port: 5173,",
+    "color": "green",
+    "reason": "開発サーバが待ち受ける具体ポート番号"
+  },
+  {
+    "text": "proxy: {",
+    "color": null
+  },
+  {
+    "text": "\"/api\": {",
+    "color": null
+  },
+  {
+    "text": "target: \"http://backend:8000\",",
+    "color": "green",
+    "reason": "/api リクエストの転送先バックエンドの具体URL"
+  },
+  {
+    "text": "changeOrigin: true,",
+    "color": null
+  },
+  {
+    "text": "rewrite: (path) => path.replace(/^\\/api/, \"\"),",
+    "color": "yellow",
+    "reason": "転送時に先頭の /api を除去する書き換え挙動（注意）"
+  },
+  {
+    "text": "test: {",
+    "color": null
+  },
+  {
+    "text": "globals: true,",
+    "color": null
+  },
+  {
+    "text": "environment: \"jsdom\",",
+    "color": "green",
+    "reason": "テスト実行環境の具体指定（jsdom）"
+  },
+  {
+    "text": "setupFiles: \"./src/tests/setup.ts\",",
+    "color": null
+  }
+];
+
+  const CLASS = { red: "mk mk-red", yellow: "mk mk-yellow", blue: "mk mk-blue", green: "mk mk-green" };
+
+  function render() {
+    const paper = document.getElementById("paper");
+    let p = document.createElement("p");
+    paper.appendChild(p);
+    SEGMENTS.forEach((seg, i) => {
+      if (seg.paragraph_break && p.childNodes.length) {
+        p = document.createElement("p");
+        paper.appendChild(p);
+      }
+      const node = seg.color ? document.createElement("span") : document.createTextNode(seg.text);
+      if (seg.color) {
+        node.className = CLASS[seg.color] || "";
+        node.textContent = seg.text;
+      }
+      p.appendChild(node);
+      if (seg.color && seg.reason) {
+        const note = document.createElement("span");
+        note.className = "note note-" + seg.color;
+        note.textContent = seg.reason;
+        p.appendChild(note);
+      }
+    });
+  }
+
+  function speak(color) {
+    window.speechSynthesis.cancel();
+    const text = SEGMENTS.filter((s) => s.color === color).map((s) => s.text).join(" ");
+    if (!text) return;
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "ja-JP";
+    window.speechSynthesis.speak(u);
+  }
+
+  document.querySelectorAll(".voice-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const color = btn.dataset.color;
+      if (color === "stop") { window.speechSynthesis.cancel(); return; }
+      speak(color);
+    });
+  });
+
+  render();
+</script>
+<style id="qa-style">
+  @media (min-width: 1180px) { body { padding-right: 360px; } }
+  #qa-side {
+    position: fixed; top: 0; right: 0; width: 340px; height: 100vh;
+    background: #fffaf0; border-left: 1px solid #eadfc8;
+    box-shadow: -6px 0 28px -18px rgba(0, 0, 0, 0.35);
+    padding: 20px 16px; overflow-y: auto; box-sizing: border-box; z-index: 20;
+    font-family: "Hiragino Sans", "Yu Gothic", "Noto Sans JP", system-ui, sans-serif;
+  }
+  #qa-side .qa-head { font-weight: 700; font-size: 15px; margin: 0 0 14px; color: #3a3320; }
+  #qa-side .qa-head::before { content: "💬 "; }
+  #qa-side .qa-empty { font-size: 12.5px; color: rgba(58, 51, 32, 0.6); line-height: 1.7; }
+  #qa-side .qa-item {
+    background: #fff; border: 1px solid #eadfc8; border-radius: 9px;
+    padding: 11px 13px; margin-bottom: 13px; box-shadow: 0 3px 10px -6px rgba(0, 0, 0, 0.25);
+  }
+  #qa-side .qa-q { font-weight: 700; font-size: 13px; color: #1f4f8b; margin-bottom: 7px; line-height: 1.5; }
+  #qa-side .qa-q::before { content: "Q. "; }
+  #qa-side .qa-a { font-size: 13px; line-height: 1.75; color: #33312a; white-space: pre-wrap; }
+  #qa-side .qa-mermaid { background: #fff; border: 1px solid #eef0f2; border-radius: 7px; padding: 8px; margin-top: 9px; overflow-x: auto; text-align: center; }
+  #qa-side .qa-img { max-width: 100%; border-radius: 7px; margin-top: 9px; display: block; }
+  #qa-side .qa-date { font-size: 11px; color: rgba(58, 51, 32, 0.45); margin-top: 9px; text-align: right; }
+  @media (max-width: 1180px) {
+    body { padding-right: 0; }
+    #qa-side {
+      position: static; width: auto; height: auto; box-shadow: none;
+      border-left: none; border-top: 1px solid #eadfc8; margin-top: 28px;
+    }
+  }
+</style>
+<aside id="qa-side">
+  <div class="qa-head">質問メモ</div>
+  <div id="qa-empty" class="qa-empty">まだ質問はありません。<br>/marker-question-memo で質問を追加できます。</div>
+  <div id="qa-list"></div>
+</aside>
+<script type="application/json" id="qa-data">[{"q":"Reactプラグインってどういう意味","a":"vite.config.ts の plugins: [react()] は @vitejs/plugin-react を有効化する設定です。ViteでReactのJSX/TSX変換とFast Refresh(編集即時反映のホットリロード)を可能にする公式プラグインで、これがないとViteでReactコンポーネントを開発・ビルドできません。","date":"2026-06-18"},{"q":"開発サーバーってどういう意味ですか? これはこのPCにはないのでしょうか? それともコンテナを仮想サーバーとしport5173に繋げるという意味でしょうか?","a":"開発サーバーとは Vite が npm run dev で起動するローカルWebサーバーで、ソース変更を即時反映(HMR)しながらアプリを配信する開発専用のものです(本番用の静的ビルドとは別物)。これはこのPC上にありますが、ホストに直接ではなく docker-compose の frontend コンテナの中で動いています。あなたの理解どおりで、Vite の host:true でコンテナ内の全インターフェース(0.0.0.0)に待ち受けさせ、compose の ports 5173:5173 でホストPCの localhost:5173 をコンテナの5173へ転送するため、ブラウザで localhost:5173 を開くとそのコンテナ内の開発サーバーに繋がります。","date":"2026-06-18"},{"q":"開発サーバー・ブラウザ・バックエンドの関係を図で見たい","a":"ブラウザは localhost:5173 でコンテナ内のVite開発サーバーに繋がります。/api へのリクエストはViteのproxyが同じDockerコンテナネットワーク上の backend:8000 へ転送し、backendはdb:5432へアクセスします。","date":"2026-06-18","mermaid":"flowchart LR\n  B[\"ブラウザ localhost:5173\"] --> V[\"Vite開発サーバー frontendコンテナ:5173\"]\n  V -->|\"/api を転送\"| A[\"backend:8000 FastAPI\"]\n  A --> D[(\"db:5432 Postgres\")]"}]</script>
+<script id="qa-render">
+  window.__renderQA = function () {
+    var data = JSON.parse(document.getElementById("qa-data").textContent || "[]");
+    var list = document.getElementById("qa-list");
+    var empty = document.getElementById("qa-empty");
+    empty.style.display = data.length ? "none" : "block";
+    list.innerHTML = "";
+    data.forEach(function (item) {
+      var card = document.createElement("div"); card.className = "qa-item";
+      var q = document.createElement("div"); q.className = "qa-q"; q.textContent = item.q;
+      var a = document.createElement("div"); a.className = "qa-a"; a.textContent = item.a;
+      card.appendChild(q); card.appendChild(a);
+      if (item.mermaid) {
+        var dia = document.createElement("div");
+        dia.className = "mermaid qa-mermaid";
+        dia.textContent = item.mermaid;
+        card.appendChild(dia);
+      }
+      if (item.img) {
+        var im = document.createElement("img");
+        im.className = "qa-img"; im.src = item.img; im.alt = "図";
+        card.appendChild(im);
+      }
+      if (item.date) { var d = document.createElement("div"); d.className = "qa-date"; d.textContent = item.date; card.appendChild(d); }
+      list.appendChild(card);
+    });
+    if (window.mermaid) {
+      try { window.mermaid.initialize({ startOnLoad: false }); window.mermaid.run({ querySelector: "#qa-list .mermaid" }); } catch (e) {}
+    }
+  };
+  window.addEventListener("load", window.__renderQA);
+</script>
+
+<script id="qa-mermaid-lib" src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+</body>
+</html>

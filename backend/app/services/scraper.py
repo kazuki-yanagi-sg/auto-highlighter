@@ -69,8 +69,8 @@ def _replace_math_with_tex(soup: BeautifulSoup) -> None:
 
 
 def _is_block_element(tag) -> bool:
-    """本文ブロックとして拾う要素か。別行立て数式(LaTeXMLの数式テーブル)も含める。"""
-    if tag.name in ("h1", "h2", "h3", "p", "li"):
+    """本文ブロックとして拾う要素か。コードブロック(pre)・別行立て数式も含める。"""
+    if tag.name in ("h1", "h2", "h3", "p", "li", "pre"):
         return True
     return tag.name == "table" and "ltx_equation" in (tag.get("class") or [])
 
@@ -89,10 +89,18 @@ def extract_content(html: str) -> ScrapedContent:
     main = soup.find("article") or soup.find("main") or soup.body or soup
     blocks: list[Block] = []
     for el in main.find_all(_is_block_element):
-        text = el.get_text(strip=True)
+        # コードブロック内の要素(span等)は pre 側でまとめて取るので個別には拾わない。
+        if el.name != "pre" and el.find_parent("pre") is not None:
+            continue
+        if el.name == "pre":
+            # コードは改行・字下げをそのまま保持する(strip すると整形が壊れる)。
+            text = el.get_text().strip("\n")
+            kind = "code"
+        else:
+            text = el.get_text(strip=True)
+            kind = "heading" if el.name in _HEADING_TAGS else "text"
         if not text:
             continue
-        kind = "heading" if el.name in _HEADING_TAGS else "text"
         blocks.append(Block(kind=kind, text=text))
 
     text = "\n".join(b.text for b in blocks)
@@ -111,6 +119,21 @@ def _is_textual(content_type: str) -> bool:
         or "html" in content_type
         or "xml" in content_type
     )
+
+
+def _is_pdf(content_type: str, url: str) -> bool:
+    """PDF として扱うか。content-type が pdf、または URL 末尾が .pdf なら真。
+
+    一部サーバは PDF を application/octet-stream で返すため URL 拡張子も見る。
+    """
+    return "pdf" in content_type or url.split("?", 1)[0].lower().endswith(".pdf")
+
+
+def _filename(url: str) -> str:
+    """URL 末尾のファイル名から拡張子を除いた名前(タイトル代用)。"""
+    path = url.split("?", 1)[0].rstrip("/")
+    name = path.rsplit("/", 1)[-1]
+    return name.rsplit(".", 1)[0] if "." in name else name
 
 
 class Scraper(ABC):
@@ -139,9 +162,26 @@ class HttpScraper(Scraper):
                 f"取得に失敗しました({type(exc).__name__}): {url}"
             ) from exc
 
-        # PDF/画像 等のバイナリを text として処理すると本文が壊れ(NUL混入で保存失敗)、
-        # 原因の分からない500になる。HTML/テキスト系以外はここで明示的に弾く。
         content_type = response.headers.get("content-type", "").lower()
+
+        # PDF は本文抽出する(遅延 import: pdfminer を HTML 専用利用時に読み込まない)。
+        # 解析失敗(壊れたPDF/依存欠落等)は原因不明の500ではなく ScrapeError にして伝える。
+        if _is_pdf(content_type, url):
+            try:
+                from app.services.pdf import extract_pdf_content
+
+                return extract_pdf_content(
+                    response.content, fallback_title=_filename(url)
+                )
+            except ScrapeError:
+                raise
+            except Exception as exc:  # noqa: BLE001
+                raise ScrapeError(
+                    f"PDFの解析に失敗しました({type(exc).__name__}): {url}"
+                ) from exc
+
+        # 画像 等のバイナリを text として処理すると本文が壊れ(NUL混入で保存失敗)、
+        # 原因の分からない500になる。HTML/テキスト系以外はここで明示的に弾く。
         if content_type and not _is_textual(content_type):
             raise ScrapeError(
                 f"このページはHTMLではないため取り込めません"

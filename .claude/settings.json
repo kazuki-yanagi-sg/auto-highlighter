@@ -1,0 +1,92 @@
+{
+  "permissions": {
+    "deny": []
+  },
+  "statusLine": {
+    "type": "command",
+    "command": ".claude/scripts/statusline.sh"
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/scripts/detect-command.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/detect-worktree-mode-signal.sh"
+          },
+          {
+            "type": "command",
+            "command": "echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━' && echo '⚠️  Taskツールチェックリスト' && echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━' && echo '' && echo '1. ユーザーからの新しい依頼ですか？' && echo '   → YES: 現在のタスク完了後にTaskCreateで追加' && echo '   → NO: スキップ可' && echo '' && echo '2. 作業中のタスクがありますか？' && echo '   → YES: 割り込みせず、完了後に対応' && echo '   → NO: すぐにTaskUpdateで更新' && echo '' && echo '3. Task反映が不要な場合' && echo '   → 必ず「反映不要：理由〇〇」と明記' && echo '' && echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━' && echo '忘れることは約束を破ること（最大の悪）' && echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'"
+          }
+        ]
+      }
+    ],
+    "UserPromptExpansion": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/count-skill-usage.sh"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/block-agent-worktree-isolation.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/auto-allow-worktree-claude-writes.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/enforce-worktree-mode.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/count-skill-usage.sh"
+          }
+        ]
+      }
+    ],
+    "WorktreeCreate": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/worktree-create.sh"
+          }
+        ]
+      }
+    ],
+    "WorktreeRemove": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/worktree-remove.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
